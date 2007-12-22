@@ -1,0 +1,549 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+APDLexemes
+{
+    regexp("#")
+    {
+        uint i = findEOL(input);
+        i += skipEOL(input);
+        input = input[i .. $];
+        goto readSymbol;
+    }
+
+    "q\""
+    {
+        char open, close;
+        switch ( input[lookahead.length] )
+        {
+            case '[':
+                open = '['; close = ']';
+                goto nestedDel;
+            case '(':
+                open = '('; close = ')';
+                goto nestedDel;
+            case '<':
+                open = '<'; close = '>';
+                goto nestedDel;
+            case '{':
+                open = '{'; close = '}';
+            nestedDel:
+                int counter = 1;
+                auto tmp = input[2+1 .. $];
+                foreach ( i, c; tmp )
+                {
+                    if ( c == '\n' || c == '\r' && (tmp.length < i+1 || tmp[i+1] != '\n') ) {
+                        ++line;
+                        column = 0;
+                    }
+                    else if ( c == 0 || c == 0x1a )
+                        throw new ParserException(line, column, filename, "Missing string delimiter");
+                    else if ( c == open )
+                        ++counter;
+                    else if ( c == close && --counter == 0 )
+                    {
+                        if ( tmp.length < i+2 || tmp[i+1] != '"' )
+                            throw new ParserException(line, column, filename, "Missing double quote after string delimiter");
+                        lookahead = lookahead[0 .. $+i+3];
+                        lookahead_ws = lookahead_ws[0 .. $+i+3];
+                        break;
+                    }
+                    ++column;
+                }
+                throw new ParserException(line, column, filename, "Missing string delimiter");
+            default:
+                string delimiter = input[2 .. $];
+                // TODO: newline only needed if delimiter is an identifier
+                auto i = findEOL(delimiter);
+                if ( i == 0 )
+                    throw new ParserException(line, column, filename, "Missing string delimiter");
+                delimiter = delimiter[0 .. i];
+                i += 2; // adjust for lookahead
+
+                i += skipEOL(input[i .. $]);
+                ++line;
+
+                while ( input.length > 0 )
+                {
+                    i += findEOL(input[i .. $]);
+                    i += skipEOL(input[i .. $]);
+                    ++line;
+
+                    if ( input.length < i+delimiter.length )
+                        throw new ParserException(line, 0, filename, "Missing string delimiter");
+                    if ( input[i .. i+delimiter.length] == delimiter )
+                    {
+                        if ( input[i+delimiter.length] != '"' )
+                            throw new ParserException(line, delimiter.length+1, filename, "Missing double quote after string delimiter");
+                        column = delimiter.length+1;
+                        lookahead = lookahead[0 .. $+i-2+delimiter.length+1];
+                        lookahead_ws = lookahead_ws[0 .. $+i-2+delimiter.length+1];
+                        break;
+                    }
+                }
+                throw new ParserException(line, column, filename, "Missing string delimiter");
+        }
+
+    }
+}
+
+APDDeclaration
+{
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+module seatd.parser;
+
+import seatd.module_data;
+
+uint findEOL(string str)
+{
+    uint i;
+    while ( i < str.length )
+    {
+        switch ( str[i] )
+        {
+            case '\r':
+            case '\n':
+            case 0:
+            case 0x1a:
+                return i;
+            case '_':
+                if ( str.length > i+6 && str[i+1 .. i+7] == "_EOF__" )
+                    return i;
+                break;
+            default:
+                break;
+        }
+        ++i;
+    }
+    return i;
+}
+
+uint skipEOL(string str)
+{
+    if ( str.length == 0 )
+        return 0;
+    switch ( str[0] )
+    {
+        case '\r':
+            if ( str.length > 1 && str[1] == '\n' )
+                return 2;
+        case '\n':
+            return 1;
+        case '_':
+            if ( str.length < 7 || str[1 .. 7] != "_EOF__" )
+                break;
+            return 7;
+        case 0:
+        case 0x1a:
+            return 1;
+        default:
+            break;
+    }
+    return 0;
+}
+
+}
+
+
+/**************************************************************************************************
+    Grammar imports
+**************************************************************************************************/
+import class_struct_iface;
+import statements;
+import declarations;
+import templates;
+import expressions;
+import lexical;
+
+
+/**************************************************************************************************
+    Whitespace
+**************************************************************************************************/
+Whitespace
+{
+    Whitespace WhitespaceFlat;
+    WhitespaceFlat;
+}
+
+WhitespaceFlat
+{
+    regexp("/\\*([^\\*]|\\*>[^/])*\\*/");
+    regexp("//[^\\n\\r]*");
+    regexp("[\\n\\r\\t ]+");
+    "/+" WhitespaceNesteds "+/";
+}
+
+WhitespaceNesteds
+{
+    WhitespaceNesteds WhitespaceNested;
+    WhitespaceNested;
+}
+
+WhitespaceNested
+{
+    regexp("[^/\\+\\*\\n\\r\\t ]+");
+    "+";
+    "*";
+    "/";
+    WhitespaceFlat;
+}
+
+/**************************************************************************************************
+    Modules
+**************************************************************************************************/
+Module(ModuleData info, out bool has_module_decl)
+{
+    ModuleDeclarationOpt DeclDefsOpt
+    {
+        Declaration module_decl;
+        ModuleDeclarationOpt(info, module_decl);
+        if ( module_decl !is null )
+            has_module_decl = true;
+        DeclAttribute attrs;
+        DeclDefsOpt(info, module_decl, attrs);
+    }
+}
+
+ModuleDeclarationOpt(ModuleData info, out Declaration moduleDecl)
+{
+    "module" ModuleName ";"
+    {
+        ModuleName(info.fqname);
+        moduleDecl = new Declaration(null, Declaration.Type.dtModule, 0, info.fqname, _ST_line_number, _ST_column_number);
+        info.decls.insert(moduleDecl);
+    }
+    
+    epsilon;
+}
+
+ModuleName(out string name)
+{
+    ModuleName "." Identifier
+    {
+        ModuleName(name);
+        string tmp;
+        Identifier(tmp);
+        name ~= "."~tmp;
+    }
+    
+    Identifier
+    { Identifier(name); }
+}
+
+DeclDefsOpt(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+{
+    DeclDefsOpt !(sync) DeclDef
+    {
+        DeclDefsOpt(info, parentDecl, attrs);
+        DeclDef(info, parentDecl, attrs);
+    }
+    
+    epsilon;
+}
+
+DeclDef(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+{
+    StaticAssert;
+
+    ConditionalDeclaration
+    { ConditionalDeclaration(info, parentDecl, attrs); }
+
+    Declaration
+    { Declaration(info, parentDecl, attrs); }
+
+    ImportDeclaration
+    { ImportDeclaration(info, attrs); }
+
+    AttributeSpecifier
+    { AttributeSpecifier(info, parentDecl, attrs); }
+
+    EnumDeclaration
+    { EnumDeclaration(info, parentDecl, attrs); }
+
+    TemplateMixin;
+
+    TemplateDeclaration
+    { TemplateDeclaration(info, parentDecl, attrs); }
+
+    FunctionTemplateDeclaration
+    { FunctionTemplateDeclaration(info, parentDecl, attrs); }
+
+    ClassTemplateDeclaration
+    { ClassTemplateDeclaration(info, parentDecl, attrs); }
+
+    InterfaceTemplateDeclaration
+    { InterfaceTemplateDeclaration(info, parentDecl, attrs); }
+
+    StructTemplateDeclaration
+    { StructTemplateDeclaration(info, parentDecl, attrs); }
+
+    ClassDeclaration
+    { ClassDeclaration(info, parentDecl, attrs); }
+
+    InterfaceDeclaration
+    { InterfaceDeclaration(info, parentDecl, attrs); }
+
+    AggregateDeclaration
+    { AggregateDeclaration(info, parentDecl, attrs); }
+
+    Constructor;
+    Destructor;
+    Invariant;
+    UnitTest;
+    StaticConstructor;
+    StaticDestructor;
+    DebugSpecification;
+    VersionSpecification;
+    MixinDeclaration;
+    ";";
+}
+
+
+/**************************************************************************************************
+    Conditional compilation
+**************************************************************************************************/
+ConditionalDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    Condition ":";
+
+    Condition
+    DeclarationBlock
+    { DeclarationBlock(info, parentDecl, attrs); }
+
+    Condition
+    DeclarationBlock
+    "else" DeclarationBlock=ElseBlock
+    {
+        DeclarationBlock(info, parentDecl, attrs);
+        ElseBlock(info, parentDecl, attrs);
+    }
+}
+
+Condition() no_ast
+{
+    VersionCondition;
+    DebugCondition;
+    StaticIfCondition;
+}
+
+VersionCondition() no_ast
+{
+	"version" "(" Integer ")";
+	"version" "(" Identifier ")";
+}
+
+VersionSpecification() no_ast
+{
+    "version" "=" Integer ";";
+    "version" "=" Identifier ";";
+}
+
+DebugCondition() no_ast
+{
+    "debug" "(" Integer ")";
+    "debug" "(" Identifier ")";
+    "debug";
+}
+
+DebugSpecification() no_ast
+{
+    "debug" "=" Identifier ";";
+    "debug" "=" Integer ";";
+}
+
+StaticIfCondition() no_ast
+{
+    "static" "if" "(" AssignExpression ")";
+}
+
+StaticAssert() no_ast
+{
+    "static" "assert" "(" AssignExpression "," AssignExpression=AssignEx2 ")" ";";
+    "static" "assert" "(" AssignExpression ")" ";";
+}
+
+
+/**************************************************************************************************
+    Import Declaration
+**************************************************************************************************/
+ImportDeclaration(ModuleData info, DeclAttribute attrs)
+{
+    "import" ImportList ";"
+    {
+        ImportList(info, attrs);
+    }
+}
+
+ImportList(ModuleData info, DeclAttribute attrs)
+{
+    ImportList "," Import
+    {
+        ImportList(info, attrs);
+        Import(info, attrs);
+    }
+
+    Import
+    { Import(info, attrs); }
+}
+
+Import(ModuleData info, DeclAttribute attrs)
+{
+    Identifier=ModuleAliasIdentifier "=" ModuleName ImportBindListOpt
+    {
+        Import imp = new Import(attrs);
+        ModuleName(imp.module_name);
+        info.imports ~= imp;
+    }
+
+    ModuleName ImportBindListOpt
+    {
+        Import imp = new Import(attrs);
+        ModuleName(imp.module_name);
+        info.imports ~= imp;
+    }
+}
+
+ImportBindListOpt() no_ast
+{
+    ":" ImportBindList;
+    epsilon;
+}
+
+ImportBindList() no_ast
+{
+    ImportBindList "," ImportBind;
+    ImportBind;
+}
+
+ImportBind() no_ast
+{
+    Identifier "=" Identifier=Id2;
+    Identifier;
+}
+
+/**************************************************************************************************
+    Attributes
+**************************************************************************************************/
+AttributeSpecifier(ModuleData info, Declaration parentDecl, ref DeclAttribute attr)
+{
+    Attributes ":"
+    { Attributes(attr); }
+
+    Attributes DeclarationBlock
+    {
+        Attributes(attr);
+        DeclarationBlock(info, parentDecl, attr);
+    }
+}
+
+Attribute(ref DeclAttribute attr)
+{
+    "synchronized"      { attr |= atSynchronized; }
+    "deprecated"        { attr |= atDeprecated; }
+    "private"           { attr |= atPrivate; }
+    "package"           { attr |= atPackage; }
+    "protected"         { attr |= atProtected; }
+    "public"            { attr |= atPublic; }
+    "export"            { attr |= atExport; }
+    "static"            { attr |= atStatic; }
+    "override"          { attr |= atOverride; }
+    "abstract"          { attr |= atAbstract; }
+    "auto"              { attr |= atAuto; }
+    "scope"             { attr |= atScope; }
+    Constness prefer    { Constness(attr); }
+    LinkageAttribute;
+    AlignAttribute;
+    Pragma;
+}
+
+Attributes(ref DeclAttribute attr)
+{
+    Attributes Attribute
+    { Attributes(attr); Attribute(attr); }
+
+    Attribute deny(Attributes)
+    { Attribute(attr); }
+}
+
+DeclarationBlock(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    "{" DeclDefsOpt "}"
+    { DeclDefsOpt(info, parentDecl, attrs); }
+
+    DeclDef
+    { DeclDef(info, parentDecl, attrs); }
+}
+
+LinkageAttribute()
+{
+	"extern" "(" Identifier ")";
+	"extern" "(" Identifier "++" ")";
+	"extern";
+}
+
+AlignAttribute() no_ast
+{
+	"align" "(" Integer ")";
+	"align";
+}
+
+Pragma() no_ast
+{
+    "pragma" "(" Identifier "," Expression ")";
+    "pragma" "(" Identifier ")";
+}
+
+
+/**************************************************************************************************
+    Functions
+**************************************************************************************************/
+FunctionBody(ModuleData info, Declaration parentDecl)
+{
+	InStatement OutStatement BodyStatement
+    { BodyStatement(info, parentDecl); }
+
+	OutStatement InStatement BodyStatement
+    { BodyStatement(info, parentDecl); }
+
+	InStatement BodyStatement
+    { BodyStatement(info, parentDecl); }
+
+	OutStatement BodyStatement
+    { BodyStatement(info, parentDecl); }
+
+	BlockStatement
+    { BlockStatement(info, parentDecl); }
+
+	BodyStatement
+    { BodyStatement(info, parentDecl); }
+}
+
+FunctionBodyOpt(ModuleData info, Declaration parentDecl)
+{
+    FunctionBody
+    { FunctionBody(info, parentDecl); }
+
+    ";";
+}
+
+InStatement() no_ast
+{
+	"in" BlockStatement;
+}
+
+OutStatement() no_ast
+{
+	"out" "(" Identifier ")" BlockStatement;
+	"out" BlockStatement;
+}
+
+BodyStatement(ModuleData info, Declaration parentDecl)
+{
+	"body" BlockStatement
+    { BlockStatement(info, parentDecl); }
+}

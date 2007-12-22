@@ -1,0 +1,210 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+TemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	"template" Identifier "(" TemplateParameterListOpt ")"
+	"{" DeclDefsOpt "}"
+    {
+        string name;
+        Identifier(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtTemplate, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+
+        DeclAttribute body_attrs;
+        DeclDefsOpt(info, decl, body_attrs);
+    }
+}
+
+TemplateParameterListOpt() no_ast
+{
+	TemplateParameterList;
+	epsilon;
+}
+
+TemplateParameterList() no_ast
+{
+	TemplateParameterList "," TemplateParameter;
+	TemplateParameter;
+}
+
+TemplateParameter() no_ast
+{
+	TemplateAliasParameter;
+	TemplateTupleParameter;
+	TemplateValueParameter;
+	TemplateTypeParameter;
+}
+
+TemplateTypeParameter() no_ast
+{
+	Identifier TemplateTypeParameterSpecializationOpt TemplateTypeParameterDefaultOpt;
+}
+
+TemplateTypeParameterSpecializationOpt() no_ast
+{
+	":" Type;
+    epsilon;
+}
+
+TemplateTypeParameterDefaultOpt() no_ast
+{
+	"=" Type;
+    epsilon;
+}
+
+TemplateValueParameter() no_ast
+{
+	BasicType Declarator TemplateValueParameterSpecializationOpt TemplateValueParameterDefaultOpt;
+}
+
+TemplateValueParameterSpecializationOpt() no_ast
+{
+	":" ConditionalExpression;
+    epsilon;
+}
+
+TemplateValueParameterDefaultOpt() no_ast
+{
+	"=" ConditionalExpression;
+    epsilon;
+}
+
+TemplateAliasParameter() no_ast
+{
+	"alias" Identifier TemplateAliasParameterSpecializationOpt TemplateAliasParameterDefaultOpt;
+}
+
+TemplateAliasParameterSpecializationOpt() no_ast
+{
+	":" Type;
+    epsilon;
+}
+
+TemplateAliasParameterDefaultOpt() no_ast
+{
+	"=" Type;
+    epsilon;
+}
+
+TemplateTupleParameter() no_ast
+{
+	Identifier "...";
+}
+
+ClassTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    "class"
+    Identifier "(" TemplateParameterListOpt ")"
+    BaseClassListOpt
+    ClassBody
+    {
+        string name;
+        Identifier(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtClass, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+
+        DeclAttribute body_attrs;
+        ClassBody(info, decl, attrs);
+    }
+}
+
+InterfaceTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    "interface"
+    Identifier "(" TemplateParameterListOpt ")"
+    SuperInterfaceListOpt
+    InterfaceBody
+    {
+        string name;
+        Identifier(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtInterface, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+        
+        DeclAttribute body_attrs;
+        InterfaceBody(info, decl, attrs);
+    }
+}
+
+StructTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    "struct"
+    Identifier "(" TemplateParameterListOpt ")"
+    StructBody
+    {
+        string name;
+        Identifier(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+        
+        DeclAttribute body_attrs;
+        StructBody(info, decl, body_attrs);
+    }
+}
+
+FunctionTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    TypeIdent "(" TemplateParameterList ")" "(" ParameterListOpt ")" FunctionBody
+    {
+        string name;
+        TypeIdent(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtFunction, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+        
+        FunctionBody(info, decl);
+    }
+}
+
+// used to avoid a s/r conflict of Type and Declarator
+TypeIdent(out string ident)
+{
+    BasicType Identifier
+    { Identifier(ident); }
+
+    Type Identifier
+    { Identifier(ident); }
+}
+
+/**************************************************************************************************
+    Template Instances
+**************************************************************************************************/
+TemplateInstance() no_ast
+{
+	Identifier=TemplateIdentifer "!" "(" TemplateArgumentListOpt ")";
+}
+
+TemplateArgumentListOpt() no_ast
+{
+	TemplateArgumentList;
+    epsilon;
+}
+
+TemplateArgumentList() no_ast
+{
+	TemplateArgumentList "," TemplateArgument;
+    TemplateArgument;
+}
+
+TemplateArgument() no_ast
+{
+	Type;
+	AssignExpression;
+	Identifier=Symbol;
+}
+
+
+/**************************************************************************************************
+    Template Mixins
+**************************************************************************************************/
+TemplateMixin() no_ast
+{
+	"mixin" Identifier TemplateMixin2 IdentifierOpt ";";
+}
+
+TemplateMixin2() no_ast
+{
+	"!" "(" TemplateArgumentListOpt ")";
+    epsilon;
+}

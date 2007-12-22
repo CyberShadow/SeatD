@@ -1,0 +1,257 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+/**************************************************************************************************
+    Class Declaration
+**************************************************************************************************/
+ClassDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    "class" Identifier BaseClassListOpt ClassBody
+    {
+        string name;
+        Identifier(name);
+        Declaration classDecl = new Declaration(parentDecl, Declaration.Type.dtClass, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(classDecl);
+
+        DeclAttribute body_attrs;
+        ClassBody(info, classDecl, body_attrs);
+    }
+}
+
+BaseClassListOpt() no_ast
+{
+    ":" BaseClassList;
+    epsilon;
+}
+
+BaseClassList() no_ast
+{
+    SuperClass "," InterfaceClasses;
+    SuperClass;
+}
+
+SuperClass() no_ast
+{
+    Protection IdentifierList;
+    IdentifierList;
+}
+
+InterfaceClasses() no_ast
+{
+    InterfaceClasses "," SuperClass;
+    SuperClass;
+}
+
+Protection() no_ast
+{
+    "private";
+    "package";
+    "public";
+    "export";
+}
+
+ClassBody(ModuleData info, Declaration classDecl, DeclAttribute attrs)
+{
+    "{" "}";
+
+    "{" ClassBodyDeclarations "}"
+    {
+        ClassBodyDeclarations(info, classDecl, attrs);
+    }
+}
+
+ClassBodyDeclarations(ModuleData info, Declaration classDecl, ref DeclAttribute attrs)
+{
+    ClassBodyDeclarations !(sync) ClassBodyDeclaration
+    {
+        ClassBodyDeclarations(info, classDecl, attrs);
+        ClassBodyDeclaration(info, classDecl, attrs);
+    }
+
+    ClassBodyDeclaration
+    {
+        ClassBodyDeclaration(info, classDecl, attrs);
+    }
+}
+
+ClassBodyDeclaration(ModuleData info, Declaration classDecl, ref DeclAttribute attrs)
+{
+    DeclDef
+    { DeclDef(info, classDecl, attrs); }
+    
+    ClassAllocator;
+    ClassDeallocator;
+}
+
+Constructor()
+{
+    "this" Parameters FunctionBodyOpt;
+}
+
+Destructor()
+{
+    "~" "this" "(" ")" FunctionBodyOpt;
+}
+
+StaticConstructor() no_ast
+{
+	"static" "this" "(" ")" FunctionBody;
+}
+
+StaticDestructor()
+{
+	"static" "~" "this" "(" ")" FunctionBody;
+}
+
+Invariant()
+{
+	"invariant" BlockStatement;
+	"invariant" "(" ")" BlockStatement;
+}
+
+UnitTest()
+{
+	"unittest" FunctionBody;
+}
+
+ClassAllocator()
+{
+	"new" Parameters FunctionBody;
+}
+
+ClassDeallocator() no_ast
+{
+	"delete" Parameters FunctionBody;
+}
+
+/**************************************************************************************************
+    Interfaces
+**************************************************************************************************/
+InterfaceDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	"interface" Identifier SuperInterfaceListOpt InterfaceBody
+    {
+        string name;
+        Identifier(name);
+        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtInterface, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+        
+        DeclAttribute body_attrs;
+        InterfaceBody(info, decl, body_attrs);
+    }
+}
+
+SuperInterfaceListOpt() no_ast
+{
+    ":" SuperInterfaces;
+    epsilon;
+}
+
+SuperInterfaces() no_ast
+{
+	SuperInterfaces "," SuperInterface;
+	SuperInterface;
+}
+
+SuperInterface() no_ast
+{
+    Protection IdentifierList;
+    IdentifierList;
+}
+
+InterfaceBody(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	"{" DeclDefsOpt "}"
+    { DeclDefsOpt(info, parentDecl, attrs); }
+}
+
+/**************************************************************************************************
+    Aggregates structs/unions
+**************************************************************************************************/
+AggregateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	Tag IdentifierOpt StructBody
+    {
+        string tag;
+        Tag(tag);
+        string name;
+        IdentifierOpt(name);
+
+        Declaration structDecl;
+        if ( tag == "struct" )
+            structDecl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
+        else
+            structDecl = new Declaration(parentDecl, Declaration.Type.dtUnion, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(structDecl);
+
+        DeclAttribute body_attrs;
+        StructBody(info, structDecl, body_attrs);
+    }
+
+	Tag IdentifierOpt ";"
+    {
+        string tag;
+        Tag(tag);
+        string name;
+        IdentifierOpt(name);
+
+        Declaration structDecl;
+        if ( tag == "struct" )
+            structDecl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
+        else
+            structDecl = new Declaration(parentDecl, Declaration.Type.dtUnion, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(structDecl);
+    }
+}
+
+Tag(out string value) prefer(regexp("[a-zA-Z_][_a-zA-Z0-9]*"))
+{
+	"struct" { value = "struct"; }
+	"union" { value = "union"; }
+}
+
+StructBody(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	"{" "}";
+
+	"{" "}" ";";
+
+	"{" StructBodyDeclarations "}"
+    { StructBodyDeclarations(info, parentDecl, attrs); }
+
+	"{" StructBodyDeclarations "}" ";"
+    { StructBodyDeclarations(info, parentDecl, attrs); }
+}
+
+StructBodyDeclarations(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	StructBodyDeclarations StructBodyDeclaration
+    {
+        StructBodyDeclarations(info, parentDecl, attrs);
+        StructBodyDeclaration(info, parentDecl, attrs);
+    }
+
+    StructBodyDeclaration
+    { StructBodyDeclaration(info, parentDecl, attrs); }
+}
+
+StructBodyDeclaration(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+{
+    DeclDef
+    { DeclDef(info, parentDecl, attrs); }
+
+	StructAllocator;
+	StructDeallocator;
+}
+
+StructAllocator() no_ast
+{
+	ClassAllocator;
+}
+
+StructDeallocator() no_ast
+{
+	ClassDeallocator;
+}

@@ -1,0 +1,290 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+ConditionalStatement() no_ast
+{
+    Condition Statement "else" Statement=S2;
+    Condition Statement;
+}
+
+Statement(ModuleData info, Declaration parentDecl)
+{
+    NonEmptyStatement
+    { NonEmptyStatement(info, parentDecl); }
+
+    BlockStatement
+    { BlockStatement(info, parentDecl); }
+}
+
+StatementList(ModuleData info, Declaration parentDecl)
+{
+    StatementList !(sync) Statement
+    { StatementList(info, parentDecl); Statement(info, parentDecl); }
+
+    Statement
+    { Statement(info, parentDecl); }
+}
+
+NoScopeNonEmptyStatement() no_ast
+{
+    NonEmptyStatement;
+    BlockStatement;
+}
+
+NoScopeStatement() no_ast
+{
+    NonEmptyStatement;
+    BlockStatement;
+}
+
+NonEmptyStatement(ModuleData info, Declaration parentDecl)
+{
+    DeclDef
+    {
+        DeclAttribute attrs;
+        DeclDef(info, parentDecl, attrs);
+    }
+    
+    NonEmptyNoDeclStatement
+    { NonEmptyNoDeclStatement(info, parentDecl); }
+}
+
+NonEmptyNoDeclStatement(ModuleData info, Declaration parentDecl)
+{
+    LabeledStatement;
+    ExpressionStatement;
+    IfStatement;
+    ConditionalStatement;
+    WhileStatement;
+    DoStatement;
+    ForStatement;
+    ForeachStatement;
+    SwitchStatement;
+    CaseStatement;
+    DefaultStatement;
+    ContinueStatement;
+    BreakStatement;
+    ReturnStatement;
+    GotoStatement;
+    WithStatement;
+    SynchronizedStatement;
+    TryStatement;
+    ScopeGuardStatement;
+    ThrowStatement;
+    VolatileStatement;
+    AsmStatement;
+    PragmaStatement;
+    ForeachRangeStatement;
+}
+
+ScopeStatement() no_ast
+{
+    NonEmptyStatement;
+    BlockStatement;
+}
+
+NoDeclScopeStatement() no_ast
+{
+    NonEmptyNoDeclStatement;
+    BlockStatement;
+}
+
+LabeledStatement() no_ast
+{
+    Identifier ":" NoScopeStatement;
+}
+
+BlockStatement(ModuleData info, Declaration parentDecl)
+{
+    "{" "}";
+
+    "{" StatementList "}"
+    { StatementList(info, parentDecl); }
+}
+
+ExpressionStatement() no_ast
+{
+    Expression ";";
+}
+
+IfStatement() no_ast
+{
+	"if" "(" IfCondition ")" !(sync) ScopeStatement;
+	"if" "(" IfCondition ")" !(sync) ScopeStatement "else" ScopeStatement=S2;
+}
+
+IfCondition() no_ast
+{
+	Expression;
+	"auto" Identifier "=" Expression;
+	BasicType Declarator "=" Expression;
+}
+
+WhileStatement() no_ast
+{
+    "while" "(" Expression ")" !(sync) ScopeStatement;
+}
+
+DoStatement() no_ast
+{
+    "do" ScopeStatement "while" "(" Expression ")";
+}
+
+ForStatement() no_ast
+{
+	"for" "(" NoScopeNonEmptyStatement ExpressionOpt ";" ExpressionOpt=EL2 ")" !(sync) ScopeStatement;
+}
+
+ForeachStatement() no_ast
+{
+    Foreach "(" ForeachTypeList ";" Expression ")" !(sync) ScopeStatement;
+}
+
+Foreach() no_ast
+{
+    "foreach";
+    "foreach_reverse";
+}
+
+ForeachTypeList() no_ast
+{
+    ForeachTypeList !(sync) "," ForeachType;
+    ForeachType ;
+}
+
+ForeachType() no_ast
+{
+    "inout" Type Identifier;
+    "ref" Type Identifier;
+    Type Identifier;
+    "inout" Identifier;
+    "ref" Identifier;
+    Identifier;
+}
+
+ForeachRangeStatement() no_ast
+{
+    Foreach "(" ForeachType ";" AssignExpression ".." AssignExpression ")" !(sync) ScopeStatement;
+}
+
+SwitchStatement() no_ast
+{
+	"switch" "(" Expression ")" !(sync) BlockStatement;
+}
+
+CaseStatement() no_ast
+{
+	"case" Expression ":";
+}
+
+DefaultStatement() no_ast
+{
+	"default" ":";
+}
+
+ContinueStatement() no_ast
+{
+    "continue" ";";
+    "continue" Identifier ";";
+}
+
+BreakStatement() no_ast
+{
+    "break" ";";
+    "break" Identifier ";";
+}
+
+ReturnStatement() no_ast
+{
+    "return" ";";
+    "return" Expression ";";
+}
+
+GotoStatement() no_ast
+{
+    "goto" Identifier ";";
+    "goto" "default" ";";
+    "goto" "case" ";";
+    "goto" "case" Expression ";";
+}
+
+WithStatement() no_ast
+{
+	"with" "(" Expression ")" !(sync) ScopeStatement;
+	"with" "(" TemplateInstance ")" !(sync) ScopeStatement;
+}
+
+SynchronizedStatement() no_ast
+{
+    "synchronized" >[^"("] NoDeclScopeStatement;
+    "synchronized" "(" Expression ")" !(sync) ScopeStatement;
+}
+
+TryStatement() no_ast
+{
+	"try" ScopeStatement Catches;
+	"try" ScopeStatement Catches FinallyStatement;
+	"try" ScopeStatement FinallyStatement;
+}
+
+Catches() no_ast
+{
+	LastCatch;
+	Catch Catches;
+	Catch;
+}
+
+LastCatch() no_ast
+{
+	"catch" NoScopeNonEmptyStatement;
+}
+
+Catch() no_ast
+{
+	"catch" "(" Parameter ")" !(sync) NoScopeNonEmptyStatement;
+}
+
+FinallyStatement() no_ast
+{
+	"finally" NoScopeNonEmptyStatement;
+}
+
+ThrowStatement() no_ast
+{
+	"throw" Expression ";";
+}
+
+ScopeGuardStatement() no_ast
+{
+	"scope" "(" Identifier ")" !(sync) Statement;
+}
+
+VolatileStatement() no_ast
+{
+	"volatile" Statement;
+	"volatile" ";";
+}
+
+AsmStatement() no_ast
+{
+	"asm" "{" "}";
+	"asm" "{" AsmInstructionList "}";
+}
+
+AsmInstructionList() no_ast
+{
+    AsmInstructionList AsmInstruction;
+    AsmInstruction;
+}
+
+AsmInstruction() no_ast
+{
+    [^ "{" "}" ];
+}
+
+PragmaStatement() no_ast
+{
+    Pragma NoScopeStatement;
+}

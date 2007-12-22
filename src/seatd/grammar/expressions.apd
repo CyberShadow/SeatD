@@ -1,0 +1,326 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+// TODO: prefer declaration on expressionstatement conflict
+Expression() no_ast
+{
+    Expression "," AssignExpression;
+    AssignExpression;
+}
+
+ExpressionOpt() no_ast
+{
+    Expression;
+    epsilon;
+}
+
+AssignExpression() no_ast
+{
+    ConditionalExpression;
+	ConditionalExpression "=" AssignExpression;
+	ConditionalExpression "+=" AssignExpression;
+	ConditionalExpression "-=" AssignExpression;
+	ConditionalExpression "*=" AssignExpression;
+	ConditionalExpression "/=" AssignExpression;
+	ConditionalExpression "%=" AssignExpression;
+	ConditionalExpression "&=" AssignExpression;
+	ConditionalExpression "|=" AssignExpression;
+	ConditionalExpression "^=" AssignExpression;
+	ConditionalExpression "~=" AssignExpression;
+	ConditionalExpression "<<=" AssignExpression;
+	ConditionalExpression ">>=" AssignExpression;
+	ConditionalExpression ">>>=" AssignExpression;
+}
+
+ConditionalExpression() no_ast
+{
+    OrOrExpression;
+    OrOrExpression "?" Expression ":" ConditionalExpression;
+}
+
+OrOrExpression() no_ast
+{
+    AndAndExpression;
+    OrOrExpression "||" AndAndExpression;
+}
+
+AndAndExpression() no_ast
+{
+    OrExpression;
+    AndAndExpression "&&" OrExpression;
+}
+
+OrExpression() no_ast
+{
+    XorExpression;
+    OrExpression "|" XorExpression;
+}
+
+XorExpression() no_ast
+{
+    AndExpression;
+    XorExpression "^" AndExpression;
+}
+
+AndExpression() no_ast
+{
+    CmpExpression;
+    AndExpression "&" CmpExpression;
+}
+
+CmpExpression() no_ast
+{
+    ShiftExpression;
+    ShiftExpression "==" ShiftExpression=SE2;
+    ShiftExpression "!=" ShiftExpression=SE2;
+
+    ShiftExpression "is" ShiftExpression=SE2;
+    ShiftExpression NotIs ShiftExpression=SE2;
+
+    ShiftExpression "<" ShiftExpression=SE2;
+    ShiftExpression "<=" ShiftExpression=SE2;
+    ShiftExpression ">" ShiftExpression=SE2;
+    ShiftExpression ">=" ShiftExpression=SE2;
+    ShiftExpression "!<>=" ShiftExpression=SE2;
+    ShiftExpression "!<>" ShiftExpression=SE2;
+    ShiftExpression "<>" ShiftExpression=SE2;
+    ShiftExpression "<>=" ShiftExpression=SE2;
+    ShiftExpression "!>" ShiftExpression=SE2;
+    ShiftExpression "!>=" ShiftExpression=SE2;
+    ShiftExpression "!<" ShiftExpression=SE2;
+    ShiftExpression "!<=" ShiftExpression=SE2;
+
+    ShiftExpression "in" ShiftExpression=SE2;
+}
+
+NotIs() no_ast
+{
+    regexp("!is>[^_a-zA-Z0-9]");
+}
+
+IsNotIs() no_ast
+{
+    "is";
+    regexp("!is>[^_a-zA-Z0-9]");
+}
+
+ShiftExpression() no_ast
+{
+    AddExpression;
+    ShiftExpression "<<" AddExpression;
+    ShiftExpression ">>" AddExpression;
+    ShiftExpression ">>>" AddExpression;
+}
+
+AddExpression() no_ast
+{
+    MulExpression;
+    AddExpression "+" MulExpression;
+    AddExpression "-" MulExpression;
+    CatExpression;
+}
+
+CatExpression() no_ast
+{
+    AddExpression "~" MulExpression;
+}
+
+MulExpression() no_ast
+{
+    UnaryExpression;
+    MulExpression "*" UnaryExpression;
+    MulExpression "/" UnaryExpression;
+    MulExpression "%" UnaryExpression;
+}
+
+UnaryExpression() no_ast
+{
+    PostfixExpression;
+    "&" UnaryExpression;
+    "++" UnaryExpression;
+    "--" UnaryExpression;
+    "*" UnaryExpression;
+    "-" UnaryExpression;
+    "+" UnaryExpression;
+    "!" UnaryExpression;
+    "~" UnaryExpression;
+    "(" Type ")" "." Identifier;
+
+	NewExpression;
+	"delete" UnaryExpression;
+	"cast" "(" Type ")" UnaryExpression;
+//    NewAnonClassExpression;
+}
+
+PostfixExpression() no_ast
+{
+	Integer;
+    Float;
+	"$";
+	"null";
+	"true";
+	"false";
+	AssertExpression;
+	MixinExpression;
+	IsExpression;
+	PostfixExpression2;
+}
+
+PostfixExpression2() no_ast
+{
+	PrimaryExpression;
+	PostfixExpression2 "." Identifier;
+	PostfixExpression2 "." TemplateInstance;
+	PostfixExpression2 "++";
+	PostfixExpression2 "--";
+	PostfixExpression2 "(" ArgumentList ")";
+
+	PostfixExpression2 "[" ArgumentList "]";
+	PostfixExpression2 "[" AssignExpression ".." AssignExpression=AE2 "]";
+}
+
+PrimaryExpression() no_ast
+{
+    Identifier prefer(IdentifierList);
+	"." Identifier;
+    TemplateInstance;
+    "." TemplateInstance;
+	"this";
+	"super";
+	CharacterLiteral;
+	StringLiterals;
+	ArrayLiteral;
+	AssocArrayLiteral;
+	FunctionLiteral;
+	ImportExpression;
+	BasicTypeNoIdList "." Identifier;
+	"typeid" "(" Type ")";
+	"(" Expression ")";
+    TraitsExpression;
+}
+
+AssertExpression() no_ast
+{
+	"assert" "(" AssignExpression ")";
+	"assert" "(" AssignExpression "," AssignExpression=AE2 ")";
+}   
+
+MixinExpression() no_ast
+{
+	"mixin" "(" AssignExpression ")";
+}
+
+ImportExpression() no_ast
+{
+	"import" "(" AssignExpression ")";
+}
+
+IsExpression() no_ast
+{
+	IsNotIs "(" Type ")";
+	IsNotIs "(" Type ":" TypeSpecialization ")";
+	IsNotIs "(" Type "==" TypeSpecialization ")";
+	IsNotIs "(" Type Identifier ")";
+	IsNotIs "(" Type Identifier ":" TypeSpecialization ")";
+	IsNotIs "(" Type Identifier "==" TypeSpecialization ")";
+	IsNotIs "(" Type Identifier ":" TypeSpecialization "," TemplateParameterList ")";
+	IsNotIs "(" Type Identifier "==" TypeSpecialization "," TemplateParameterList ")";
+}
+
+TypeSpecialization() no_ast
+{
+	Type;
+	"typedef";
+	"struct";
+	"union";
+	"class";
+	"interface";
+	"enum";
+	"function";
+	"delegate";
+	"super";
+	"return";
+}
+
+StringLiterals() no_ast
+{
+    StringLiteral;
+    StringLiterals StringLiteral;
+}
+
+ArrayLiteral() no_ast
+{
+	"[" ArgumentList "]";
+}
+
+
+AssocArrayLiteral() no_ast
+{
+	"[" KeyValuePairs "]";
+}
+
+KeyValuePairs() no_ast
+{
+	KeyValuePair;
+	KeyValuePair "," KeyValuePairs;
+}
+
+KeyValuePair() no_ast
+{
+	ConditionalExpression=Key ":" ConditionalExpression=Value;
+}
+
+FunctionLiteral() no_ast
+{
+	"function" TypeOpt "(" ParameterListOpt ")" FunctionBody;
+	"delegate" TypeOpt "(" ParameterListOpt ")" FunctionBody;
+	"function" TypeOpt FunctionBody;
+	"delegate" TypeOpt FunctionBody;
+	"(" ParameterListOpt ")" FunctionBody;
+	FunctionBody;
+}
+
+NewExpression() no_ast
+{
+	NewArguments Type "[" AssignExpression "]";
+	NewArguments Type "(" ArgumentList ")";
+	NewArguments Type;
+	NewArguments ClassArguments BaseClassListOpt "{" DeclDefsOpt "}";
+}
+
+NewArguments() no_ast
+{
+	"new" "(" ArgumentList ")";
+	"new";
+}
+
+ClassArguments() no_ast
+{
+	"class" "(" ArgumentList ")";
+	"class";
+}
+
+ArgumentList() no_ast
+{
+    Expression;
+    epsilon;
+}
+
+TraitsExpression() no_ast
+{
+    "__traits" "(" Identifier "," TraitsArguments ")";
+}
+
+TraitsArguments() no_ast
+{
+    TraitsArguments "," TraitsArgument;
+    TraitsArgument;
+}
+
+TraitsArgument() no_ast
+{
+    AssignExpression;
+    Type;
+}

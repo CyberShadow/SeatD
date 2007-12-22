@@ -1,0 +1,10 @@
+LIBRARY         seatd_scite
+DESCRIPTION     'Semantics Aware Tools for D'
+
+EXETYPE NT
+SUBSYSTEM WINDOWS
+CODE SHARED EXECUTE
+DATA WRITE
+
+EXPORTS
+		get_SciTE_extension

@@ -1,0 +1,628 @@
+/*  SEATD - Semantics Aware Tools for D
+ *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+/**************************************************************************************************
+    Mixin declaration
+**************************************************************************************************/
+MixinDeclaration() no_ast
+{
+    "mixin" "(" Expression ")" ";";
+}
+
+/**************************************************************************************************
+    Declarations
+**************************************************************************************************/
+Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    TypedefAlias Declaration2
+    { Declaration2(info, parentDecl, attrs); }
+
+    TypedefAlias Attributes Declaration2
+    { Attributes(attrs); Declaration2(info, parentDecl, attrs); }
+
+    TypedefAlias Attributes Identifier "=" AssignExpression ";"
+    { Attributes(attrs); }
+
+    Attributes Declaration2 force(Declaration)
+    { Attributes(attrs); Declaration2(info, parentDecl, attrs); }
+
+    Attributes IdentifierSimpleInitializerList ";"
+    { Attributes(attrs); }
+
+    Declaration2
+    { Declaration2(info, parentDecl, attrs); }
+}
+
+TypedefAlias()
+{
+    "typedef";
+    "alias";
+}
+
+// TODO: prefer declaration on expressionstatement conflict
+Declaration2(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    BasicType Declarator FunctionBody
+    {
+        string type;
+        BasicType(type);
+
+        string ident;
+        Declarator(type, ident);
+
+        auto decl = new Declaration(
+            parentDecl,
+            Declaration.Type.dtFunction,
+            attrs,
+            ident,
+            _ST_line_number, _ST_column_number
+        );
+        decl.mangled_type = type;
+        info.decls.insert(decl);
+
+        FunctionBody(info, decl);
+    }
+
+    BasicType Declarators ";"
+    {
+        string type;
+        BasicType(type);
+
+        string[]    idents;
+        Declarators(type, idents);
+
+        foreach ( id; idents )
+        {
+            auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, id, _ST_line_number, _ST_column_number);
+            decl.mangled_type = type;
+            info.decls.insert(decl);
+        }
+    }
+}
+
+IdentifierSimpleInitializerList(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+    IdentifierSimpleInitializerList "," Identifier "=" AssignExpression
+    {
+        IdentifierSimpleInitializerList(info, parentDecl, attrs);
+        string name;
+        Identifier(name);
+        auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+    }
+
+    Identifier "=" AssignExpression
+    {
+        string name;
+        Identifier(name);
+        auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, name, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+    }
+}
+
+Declarators(ref string type, ref string[] idents)
+{
+    DeclaratorInitializer
+    {
+        string ident;
+        DeclaratorInitializer(type, ident);
+        idents ~= ident;
+    }
+
+    DeclaratorInitializer "," IdentifierInitializerList
+    {
+        string ident;
+        DeclaratorInitializer(type, ident);
+        idents ~= ident;
+        IdentifierInitializerList(idents);
+    }
+}
+
+DeclaratorInitializer(ref string type, out string ident)
+{
+    Declarator
+    { Declarator(type, ident); }
+
+    Declarator "=" Initializer
+    { Declarator(type, ident); }
+}
+
+IdentifierInitializerList(ref string[] idents)
+{
+    IdentifierInitializerList "," IdentifierInitializer
+    {
+        IdentifierInitializerList(idents);
+        string ident;
+        IdentifierInitializer(ident);
+        idents ~= ident;
+    }
+
+    IdentifierInitializer
+    {
+        string ident;
+        IdentifierInitializer(ident);
+        idents ~= ident;
+    }
+}
+
+IdentifierInitializer(out string ident)
+{
+    Identifier
+    { Identifier(ident); }
+
+    Identifier "=" Initializer
+    { Identifier(ident); }
+}
+
+BasicType(out string type)
+{
+    BasicTypeNoIdList
+    { BasicTypeNoIdList(type); }
+    
+    "." IdentifierList
+    {
+    }
+
+    IdentifierList
+    {
+    }
+}
+
+BasicTypeNoIdList(out string type)
+{
+    "bool"
+    { type = "b"; }
+
+    "byte"
+    { type = "g"; }
+
+    "ubyte"
+    { type = "h"; }
+
+    "short"
+    { type = "s"; }
+
+    "ushort"
+    { type = "t"; }
+
+    "int"
+    { type = "i"; }
+
+    "uint"
+    { type = "k"; }
+
+    "long"
+    { type = "l"; }
+
+    "ulong"
+    { type = "m"; }
+
+    "char"
+    { type = "a"; }
+
+    "wchar"
+    { type = "u"; }
+
+    "dchar"
+    { type = "w"; }
+
+    "float"
+    { type = "f"; }
+
+    "double"
+    { type = "d"; }
+
+    "real"
+    { type = "e"; }
+
+    "ifloat"
+    { type = "o"; }
+
+    "idouble"
+    { type = "p"; }
+
+    "ireal"
+    { type = "j"; }
+
+    "cfloat"
+    { type = "q"; }
+
+    "cdouble"
+    { type = "r"; }
+
+    "creal"
+    { type = "c"; }
+
+    "void"
+    { type = "v"; }
+    
+    Typeof;
+    
+    Typeof IdentifierList;
+    
+    TypeConstructor "(" Type ")";
+}
+
+BasicType2(ref string type)
+{
+    "*"
+    { type = "P"~type; }
+
+    "[" "]"
+    { type = "A"~type; }
+
+    "[" Expression "]";
+
+    "[" Type "]"
+    {
+        string key_type;
+        Type(key_type);
+        type = "H"~key_type~type;
+    }
+    
+    "[" AssignExpression ".." AssignExpression=AE2 "]";
+
+    "delegate" Parameters
+    {
+        Parameters(type);
+        type = "D"~type~"Z";
+    }
+    
+    "function" Parameters
+    {
+        Parameters(type);
+        type = "F"~type~"Z";
+    }
+}
+
+TypeConstructor() no_ast
+{
+    "const";
+    "invariant";
+}
+
+Declarator(ref string type, out string ident)
+{
+    BasicType2 DeclaratorOpt
+    {
+        BasicType2(type);
+        DeclaratorOpt(type, ident);
+    }
+
+    Identifier DeclaratorSuffixesOpt
+    {
+        Identifier(ident);
+        DeclaratorSuffixesOpt(type);
+    }
+
+    "(" Declarator ")" DeclaratorSuffixesOpt
+    {
+        Declarator(type, ident);
+        DeclaratorSuffixesOpt(type);
+    }
+}
+
+DeclaratorOpt(ref string type, out string ident)
+{
+    Declarator
+    { Declarator(type, ident); }
+    
+    epsilon prefer(Type);
+}
+
+DeclaratorSuffixesOpt(ref string type)
+{
+    DeclaratorSuffixesOpt DeclaratorSuffix
+    {
+        DeclaratorSuffixesOpt(type);
+        DeclaratorSuffix(type);
+    }
+
+    epsilon prefer(TypeIdent);
+}
+
+DeclaratorSuffix(ref string type)
+{
+    "[" "]"
+    { type = "A"~type; }
+    
+    "[" Expression "]";
+
+    "[" Type "]"
+    {
+        string key_type;
+        Type(key_type);
+        type = "H"~key_type~type;
+    }
+
+    Parameters
+    {
+        string params_type;
+        Parameters(params_type);
+        type = "F"~params_type~"Z"~type;
+    }
+}
+
+IdentifierList() no_ast //prefer(PrimaryExpression)
+{
+    Identifier;
+    IdentifierList "." Identifier;
+
+    TemplateInstance;
+    IdentifierList "." TemplateInstance;
+}
+
+Typeof() no_ast
+{
+    "typeof" "(" Expression ")";
+}
+
+Type(out string type)
+{
+    Constness Type;
+
+    BasicType deny(regexp("[a-zA-Z_][_a-zA-Z0-9]*"))
+    { BasicType(type); }
+
+    BasicType Declarator2
+    {
+        BasicType(type);
+        Declarator2(type);
+    }
+}
+
+TypeOpt(out string type)
+{
+    Type
+    { Type(type); }
+
+    epsilon;
+}
+
+Constness(ref DeclAttribute attr)
+{
+    "const"         { attr |= atConst; }
+    "final"         { attr |= atFinal; }
+    "invariant"     { attr |= atInvariant; }
+}
+
+Declarator2(ref string type)
+{
+    BasicType2 prefer(DeclaratorOpt)
+    { BasicType2(type); }
+
+    BasicType2 Declarator2
+    {
+        BasicType2(type);
+        Declarator2(type);
+    }
+
+    "(" Declarator2 ")" DeclaratorSuffixesOpt
+    { Declarator2(type); }
+}
+
+Parameters(ref string type)
+{
+	"(" ")";
+
+	"(" ParameterList ")"
+    {
+        ParameterList(type);
+    }
+}
+
+ParameterListOpt(ref string type)
+{
+    ParameterList
+    { ParameterList(type); }
+    
+    epsilon;
+}
+
+ParameterList(ref string type)
+{
+    Parameter
+    { Parameter(type); }
+
+    Parameter "," ParameterList
+    {
+        Parameter(type);
+        ParameterList(type);
+    }
+
+    // TODO: correct mangling
+    Parameter "..."
+    { Parameter(type); }
+
+    // TODO: correct mangling
+    "..."
+    { type ~= "Y"; }
+}
+
+Parameter(ref string type)
+{
+    Parameter2
+    {
+        Parameter2(type);
+    }
+
+    InOut Parameter2
+    {
+        Parameter2(type);
+    }
+
+    ParameterStorageClasses Parameter2
+    {
+        ParameterStorageClasses(type);
+        Parameter2(type);
+    }
+
+    InOut ParameterStorageClasses Parameter2
+    {
+        ParameterStorageClasses(type);
+        Parameter2(type);
+    }
+}
+
+Parameter2(ref string type)
+{
+    BasicType DeclaratorOpt
+    {
+        string tmp, ident;
+        BasicType(tmp);
+        DeclaratorOpt(tmp, ident);
+        type ~= tmp;
+    }
+
+    BasicType DeclaratorOpt "=" AssignExpression
+    {
+        string tmp, ident;
+        BasicType(tmp);
+        DeclaratorOpt(tmp, ident);
+        type ~= tmp;
+    }
+}
+
+ParameterStorageClasses(ref string type)
+{
+    ParameterStorageClasses ParameterStorageClass
+    {
+        ParameterStorageClasses(type);
+        ParameterStorageClass(type);
+    }
+    
+    ParameterStorageClass
+    { ParameterStorageClass(type); }
+}
+
+ParameterStorageClass(ref string type)
+{
+    "const"
+    { type ~= "x"; }
+
+    "invariant"
+    { type ~= "y"; }
+
+    "final"
+    { type ~= "x"; }
+
+    "scope";
+    "static";
+}
+
+InOut() no_ast
+{
+    "inout";
+    "in";
+    "out";
+    "ref";
+    "lazy";
+}
+
+Initializer() no_ast
+{
+    "void";
+	NonVoidInitializer;
+}
+
+NonVoidInitializer() no_ast
+{
+    AssignExpression;
+    ArrayInitializer;
+    StructInitializer;
+}
+
+ArrayInitializer() no_ast
+{
+	"[" "]";
+	"[" ArrayStructMemberInitializers "]";
+}
+
+StructInitializer() no_ast
+{
+	"{" "}";
+	"{" ArrayStructMemberInitializers "}";
+}
+
+ArrayStructMemberInitializers() no_ast
+{
+	ArrayStructMemberInitializers !(sync) "," ArrayStructMemberInitializer;
+	ArrayStructMemberInitializers !(sync) ",";
+	ArrayStructMemberInitializer;
+}
+
+ArrayStructMemberInitializer() no_ast
+{
+	NonVoidInitializer;
+	Identifier ":" NonVoidInitializer;
+}
+
+
+/**************************************************************************************************
+    Enums
+**************************************************************************************************/
+EnumDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+{
+	"enum" Identifier EnumBaseTypeOpt EnumBody
+    {
+        string ident;
+        Identifier(ident);
+        auto decl = new Declaration(parentDecl, Declaration.Type.dtEnum, attrs, ident, _ST_line_number, _ST_column_number);
+        info.decls.insert(decl);
+        
+        EnumBody(info, decl);
+    }
+
+    "enum" EnumBaseTypeOpt EnumBody
+    { EnumBody(info, parentDecl); }
+}
+
+EnumBaseTypeOpt() no_ast
+{
+	":" Type;
+    epsilon;
+}
+
+EnumBody(ModuleData info, Declaration parent_decl)
+{
+	";";
+	"{" EnumMembers "}"
+    { EnumMembers(info, parent_decl); }
+}
+
+EnumMembers(ModuleData info, Declaration parent_decl)
+{
+	EnumMembers "," EnumMember
+    {
+        EnumMembers(info, parent_decl);
+        string ident;
+        EnumMember(ident);
+        auto decl = new Declaration(parent_decl, Declaration.Type.dtEnum, 0, ident, _ST_children[1]._ST_line_number, _ST_children[1]._ST_column_number);
+        info.decls.insert(decl);
+    }
+
+    EnumMembers ","
+    { EnumMembers(info, parent_decl); }
+
+    EnumMember
+    {
+        string ident;
+        EnumMember(ident);
+        auto decl = new Declaration(parent_decl, Declaration.Type.dtEnum, 0, ident, _ST_children[0]._ST_line_number, _ST_children[0]._ST_column_number);
+        info.decls.insert(decl);
+    }
+}
+
+EnumMember(out string ident)
+{
+	Identifier EnumInitializerOpt
+    { Identifier(ident); }
+}
+
+EnumInitializerOpt() no_ast
+{
+    "=" AssignExpression;
+    epsilon;
+}
