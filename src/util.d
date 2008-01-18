@@ -17,30 +17,35 @@ static import seatd.parser;
 /**************************************************************************************************
     Determine absolute path from given path.
 **************************************************************************************************/
-version(Windows) string getFullPath(string filename)
+string getFullPath(string filename)
 {
-	char[]	fullpath;
-	char*	filepart;
-	fullpath.length = 4096;
-	int len = GetFullPathName(
-		(filename~\0).ptr,
-		fullpath.length,
-		fullpath.ptr,
-		&filepart
-	);
-	if ( len <= 0 )
-		return null;
-	fullpath.length = len;
+    version(Windows) {
+        char[]	fullpath;
+        char*	filepart;
+        fullpath.length = 4096;
+        int len = GetFullPathName(
+            (filename~\0).ptr,
+            fullpath.length,
+            fullpath.ptr,
+            &filepart
+        );
+        if ( len <= 0 )
+            return null;
+        fullpath.length = len;
 
-	char[]	longfullpath;
-	longfullpath.length = 4096;
-	len = GetLongPathName(
-        (fullpath~\0).ptr,
-        longfullpath.ptr,
-        longfullpath.length
-	);
-	longfullpath.length = len;
-	return longfullpath;
+        char[]	longfullpath;
+        longfullpath.length = 4096;
+        len = GetLongPathName(
+            (fullpath~\0).ptr,
+            longfullpath.ptr,
+            longfullpath.length
+        );
+        longfullpath.length = len;
+        return longfullpath;
+    }
+    else {
+        return filename;
+    }
 }
 
 /**************************************************************************************************
@@ -63,15 +68,16 @@ string findModuleFile(string[] include_paths, string module_name, void delegate(
         {
             if ( i < elms.length-1 )
             {
-                auto fp = new FilePath(path.toUtf8);
-                fp = fp.append(FileConst.PathSeparatorString, elm);
+                auto fp = new FilePath(path.toString);
+                fp = fp.append(elm);
                 if ( fp.exists )
                     potential_paths ~= fp;
             }
             else
             {
-                auto fp = new FilePath(path.toUtf8);
-                fp.append(FileConst.PathSeparatorString, elm, ".d");
+                auto fp = new FilePath(path.toString);
+                fp.append(elm);
+                fp.suffix("d");
                 if ( !fp.exists )
                 {
                     fp.suffix("di");

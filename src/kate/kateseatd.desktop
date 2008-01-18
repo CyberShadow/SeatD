@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=Kate/Plugin
+X-KDE-Library=kateseatdplugin
+X-Kate-Version=2.5
+Name=SEATD for Kate
+Comment=Semantics Aware Tools for the D programming language

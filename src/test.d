@@ -10,7 +10,7 @@ import tango.io.File;
 import tango.io.FilePath;
 import tango.io.FileSystem;
 import tango.io.FileScan;
-import tango.util.time.StopWatch;
+import tango.time.StopWatch;
 import tango.core.Memory;
 
 alias char[] string;
@@ -18,13 +18,15 @@ alias char[] string;
 import seatd.parser;
 import seatd.module_data;
 
-import win32.winbase;
+//import win32.winbase;
 
 /**************************************************************************************************
 
 **************************************************************************************************/
 string getFullPath(string filename)
 {
+    return filename;
+/*
 	char[]	fullpath;
 	char*	filepart;
 	fullpath.length = 4096;
@@ -47,6 +49,7 @@ string getFullPath(string filename)
 	);
 	longfullpath.length = len;
 	return longfullpath;
+*/
 }
 
 /**************************************************************************************************
@@ -83,7 +86,7 @@ ModuleData parseModule(GLRParser parser, string filename)
     }
     catch ( Exception e )
     {
-        Stdout(e.toUtf8).newline;
+        Stdout(e.toString).newline;
     }
 
     return modinfo;
@@ -136,10 +139,10 @@ void main(string[] args)
         auto scan = new FileScan;
         scan.sweep(filename, ".d");
         foreach ( f; scan.files )
-            files ~= f.toUtf8;
+            files ~= f.toString;
         scan.sweep(filename, ".di");
         foreach ( f; scan.files )
-            files ~= f.toUtf8;
+            files ~= f.toString;
     }
     while ( !files.empty )
     {

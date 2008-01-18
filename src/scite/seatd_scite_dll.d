@@ -1,4 +1,4 @@
-/*  SEATD - Semantics Aware Tools for D
+/*  SEATD for SciTE
  *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
@@ -33,14 +33,9 @@ extern (Windows) BOOL DllMain(HINSTANCE hInstance, ULONG ulReason, LPVOID pvRese
     {
         case DLL_PROCESS_ATTACH:
             rt_init();
-/+             gc_init();
-            _minit();
-            _moduleCtor();
-            _moduleUnitTests();
- +/            break;
+            break;
         case DLL_PROCESS_DETACH:
             rt_term();
-//            gc_term();
             break;
         case DLL_THREAD_ATTACH:
         case DLL_THREAD_DETACH:
