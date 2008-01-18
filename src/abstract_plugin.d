@@ -34,7 +34,7 @@ abstract class AbstractPlugin
 public:
     this()
     {
-        root_package = new PackageData;
+        root_package_ = new PackageData;
     }
 
     
@@ -47,10 +47,38 @@ public:
     string configProperty(string name);
 
     /**********************************************************************************************
+        Access the active file's content.
+        Since it might have been modified by the host and not saved to disk, yet,
+        we need to be read it directly form host memory.
+    **********************************************************************************************/
+    string getBufferText();
+
+    /**********************************************************************************************
+        Determine whether the current buffer is to be parsed.
+        Usually done using the file extension or editor settings.
+    **********************************************************************************************/
+    bool isParsableBuffer();
+
+    /**********************************************************************************************
         Read a fully qualified identifier from the current editor buffer at the cursor.
     **********************************************************************************************/
     string fqIdentAtCursor();
     
+    /**********************************************************************************************
+        Get the current position of the cursor.
+    **********************************************************************************************/
+    void getCursor(ref uint line, ref uint col);
+
+    /**********************************************************************************************
+        Set the cursor (and view) to the given position in the file
+    **********************************************************************************************/
+    void setCursor(uint line, uint col);
+
+    /**********************************************************************************************
+        Open the given source file in the editor.
+    **********************************************************************************************/
+    void openFile(string filepath);
+
     /**********************************************************************************************
         Output to a host logging facility, message box or similar.
     **********************************************************************************************/
@@ -61,32 +89,6 @@ public:
         "identifier not found", or similar. Usually a small popup window.
     **********************************************************************************************/
     void callTip(string text);
-
-    /**********************************************************************************************
-        Open the given source file in the editor.
-    **********************************************************************************************/
-    void openFile(string filepath);
-
-    /**********************************************************************************************
-        Set the cursor (and view) to the given position in the file
-    **********************************************************************************************/
-    void setCursor(uint line, uint col);
-
-    /**********************************************************************************************
-        Get the current position of the cursor.
-    **********************************************************************************************/
-    void getCursor(ref uint line, ref uint col);
-
-    /**********************************************************************************************
-        Access the current buffer's text data.
-    **********************************************************************************************/
-    string getBufferText();
-
-    /**********************************************************************************************
-        Determine whether the current buffer is to be parsed.
-        Usually done using the file extension or editor settings.
-    **********************************************************************************************/
-    bool isParsableBuffer();
 
     /**********************************************************************************************
         Display a selection list.
@@ -100,37 +102,12 @@ public:
     // Interface to SEATD plugin functionality. Called by host specific subclass
 
     /**********************************************************************************************
-        Set the buffer with the given index to be the active buffer.
-        Indeces are arbitrary integers. They don't need to be continuous.
-        Buffers don't need to be created explicitly.
+        Set the filepath of the active buffer.
+        This name is used together with the parsed module name to automatically determine include paths.
     **********************************************************************************************/
-    void setBuffer(int index)
+    void setActiveFilepath(string filename)
     {
-        active_buffer = index;
-    }
-
-    /**********************************************************************************************
-        Get the index of the currently active buffer.
-    **********************************************************************************************/
-    int getBuffer()
-    {
-        return active_buffer;
-    }
-
-    /**********************************************************************************************
-        Called if the currently active editor buffer is closed.
-    **********************************************************************************************/
-    void clearBuffer()
-    {
-        buffer_file_names.remove(active_buffer);
-    }
-
-    /**********************************************************************************************
-        Called when loading a file into the current buffer.
-    **********************************************************************************************/
-    void setBufferFile(string filename)
-    {
-        buffer_file_names[active_buffer] = getFullPath(filename);
+        active_filepath_ = getFullPath(filename);
     }
 
     /**********************************************************************************************
@@ -141,25 +118,25 @@ public:
     {
         if ( text.length <= 0 )
         {
-            if ( index >= current_list.length ) {
-                select_list_type = SelectionListT.none;
+            if ( index >= current_list_.length ) {
+                select_list_type_ = SelectionListT.none;
                 return;
             }
-            text = current_list[index];
+            text = current_list_[index];
         }
-        if ( select_list_type == SelectionListT.goto_declaration )
+        if ( select_list_type_ == SelectionListT.goto_declaration )
         {
-            auto decl = text in list_decls;
+            auto decl = text in list_decls_;
             if ( decl !is null )
                 gotoDecl(*decl);
         }
-        else if ( select_list_type == SelectionListT.goto_module )
+        else if ( select_list_type_ == SelectionListT.goto_module )
         {
-            auto mod = text in list_modules;
+            auto mod = text in list_modules_;
             if ( mod !is null )
                 gotoModule(*mod);
         }
-        select_list_type = SelectionListT.none;
+        select_list_type_ = SelectionListT.none;
     }
 
     /***********************************************************************************************
@@ -171,7 +148,7 @@ public:
     ***********************************************************************************************/
     bool onChar(dchar c)
     {
-        if ( select_list_type == SelectionListT.none )
+        if ( select_list_type_ == SelectionListT.none )
             return false;
 
         if ( c == '.' || c == 8 || contains(FQN_CHARS, c) )
@@ -180,30 +157,30 @@ public:
 
             if ( c == 8 )
             {
-                prev_list = full_list;
-                if ( live_search_str.length > 0 )
-                    live_search_str = live_search_str[0..$-1];
-                if ( live_search_str.length == 0 ) {
-                    current_list = prev_list;
+                prev_list = full_list_;
+                if ( live_search_str_.length > 0 )
+                    live_search_str_ = live_search_str_[0..$-1];
+                if ( live_search_str_.length == 0 ) {
+                    current_list_ = prev_list;
                     showSelectionList(false);
                     return true;
                 }
             }
             else
             {
-                live_search_str ~= c;
-                if ( current_list is null )
-                    prev_list = full_list;
+                live_search_str_ ~= c;
+                if ( current_list_ is null )
+                    prev_list = full_list_;
                 else
-                    prev_list = current_list;
+                    prev_list = current_list_;
             }
 
-            current_list = null;
+            current_list_ = null;
             foreach ( l; prev_list )
             {
                 auto source = toUpper(l.dup);
-                if ( locatePattern(source, live_search_str) < source.length )
-                    current_list ~= l;
+                if ( locatePattern(source, live_search_str_) < source.length )
+                    current_list_ ~= l;
             }
 
             showSelectionList(false);
@@ -218,26 +195,26 @@ public:
     ***********************************************************************************************/
     void listDeclarations()
     {
-        if ( select_list_type != SelectionListT.none )
+        if ( select_list_type_ != SelectionListT.none )
             return;
         auto modinfo = parseBuffer;
 
         if ( modinfo !is null )
         {
-            list_decls = null;
-            full_list = null;
+            list_decls_ = null;
+            full_list_ = null;
             foreach ( Declaration decl; modinfo.decls )
             {
                 string ident = decl.fqnIdent;
 /+                 if ( decl.mangled_type !is null )
                     full_list ~= ident~"_"~decl.mangled_type;
                 else
- +/                    full_list ~= ident;
-                list_decls[ident] = decl;
+ +/                    full_list_ ~= ident;
+                list_decls_[ident] = decl;
             }
 
+            select_list_type_ = SelectionListT.goto_declaration;
             showSelectionList();
-            select_list_type = SelectionListT.goto_declaration;
         }
     }
 
@@ -246,29 +223,29 @@ public:
     ***********************************************************************************************/
     void listModules()
     {
-        if ( select_list_type != SelectionListT.none )
+        if ( select_list_type_ != SelectionListT.none )
             return;
         auto modinfo = parseBuffer;
 
-        list_modules = null;
-        full_list = null;
+        list_modules_ = null;
+        full_list_ = null;
         
         Stack!(PackageData) stack;
-        stack ~= root_package;
+        stack ~= root_package_;
         while ( !stack.empty )
         {
             auto pak = stack.pop;
             foreach ( mod; pak.modules )
             {
-                full_list ~= mod.fqname;
-                list_modules[mod.fqname] = mod;
+                full_list_ ~= mod.fqname;
+                list_modules_[mod.fqname] = mod;
             }
             foreach ( p; pak.packages )
                 stack ~= p;
         }
 
         showSelectionList();
-        select_list_type = SelectionListT.goto_module;
+        select_list_type_ = SelectionListT.goto_module;
     }
 
     /***********************************************************************************************
@@ -276,12 +253,12 @@ public:
     ***********************************************************************************************/
     void gotoDeclaration()
     {
-        if ( select_list_type != SelectionListT.none )
+        if ( select_list_type_ != SelectionListT.none )
             return;
         auto bufferinfo = parseBuffer(false);
 
         auto modinfo = bufferinfo;
-        Declaration decl = root_package.findDeclaration(fqIdentAtCursor, modinfo);
+        Declaration decl = root_package_.findDeclaration(fqIdentAtCursor, modinfo);
         if ( decl is null )
             callTip("symbol not found");
         else
@@ -338,14 +315,14 @@ public:
 
         foreach ( imp; modinfo.imports )
         {
-            auto modinfo2 = root_package.findModule(imp.module_name);
+            auto modinfo2 = root_package_.findModule(imp.module_name);
             if ( modinfo2 !is null )
                 continue;
 
             auto fname = findModuleFile(include_paths, imp.module_name, &this.log);
             if ( fname is null ) {
                 log(l.convert("Unable to find module {} in include path".dup, imp.module_name));
-                root_package ~= new ModuleData(imp.module_name);
+                root_package_ ~= new ModuleData(imp.module_name);
                 continue;
             }
 
@@ -353,7 +330,7 @@ public:
             {
                 modinfo2 = parse(fname, cast(string)(new File(fname)).read);
                 if ( modinfo2 !is null ) {
-                    root_package ~= modinfo2;
+                    root_package_ ~= modinfo2;
                     parseImports(modinfo2, include_paths);
                 }
                 else
@@ -372,11 +349,6 @@ public:
     {
         string text = getBufferText();
 
-        string* filename = active_buffer in buffer_file_names;
-        string  empty = "";
-        if ( filename is null )
-            filename = &empty;
-
         if ( !isParsableBuffer )
         {
             if ( warn_non_d_file )
@@ -386,12 +358,12 @@ public:
         
         ModuleData modinfo;
 
-        modinfo = parse(*filename, text);
+        modinfo = parse(active_filepath_, text);
         if ( modinfo is null )
             log("parse error");
         else {
-            root_package ~= modinfo;
-            auto ip = bufferIncludePath(*filename, modinfo.fqname);
+            root_package_ ~= modinfo;
+            auto ip = bufferIncludePath(modinfo.fqname);
             parseImports(modinfo, ip);
         }
 
@@ -416,7 +388,7 @@ public:
             {
                 auto mod = parse(filepath.toString, cast(string)(new File(filepath)).read);
                 if ( mod !is null )
-                    root_package ~= mod;
+                    root_package_ ~= mod;
             }
             catch ( Exception e ) {
                 log(filepath.toString~": "~e.msg);
@@ -427,9 +399,9 @@ public:
     /**********************************************************************************************
         Determine the include path for the active buffer.
     **********************************************************************************************/
-    string[] bufferIncludePath(string filepath, string module_name)
+    string[] bufferIncludePath(string module_name)
     {
-        auto ip = active_buffer in buffer_include_paths;
+        auto ip = active_filepath_ in buffer_include_paths_;
         if ( ip !is null )
             return *ip;
 
@@ -442,7 +414,7 @@ public:
 
         auto paths = split(local_ip, ";");
         if ( paths.length == 0 )
-            paths = determineIncludePath(filepath, module_name);
+            paths = determineIncludePath(active_filepath_, module_name);
         paths ~= split(global_ip, ";");
         
         foreach ( ref p; paths )
@@ -457,7 +429,7 @@ public:
 
 //        parseIncludePath(paths);
         
-        buffer_include_paths[active_buffer] = paths;
+        buffer_include_paths_[active_filepath_] = paths;
         return paths;
     }
 
@@ -467,12 +439,12 @@ public:
     void showSelectionList(bool init=true)
     {
         if ( init ) {
-            full_list.sort;
-            current_list = full_list;
-            live_search_str = null;
+            full_list_.sort;
+            current_list_ = full_list_;
+            live_search_str_ = null;
         }
 
-        showSelectionList(current_list);
+        showSelectionList(current_list_);
     }
 
 
@@ -486,16 +458,15 @@ public:
     const dstring FQN_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"d;
 
 protected:
-    string[int]     buffer_file_names;
-    string[][int]   buffer_include_paths;
-    int             active_buffer;
+    string              active_filepath_;
+    string[][string]    buffer_include_paths_;
 
-    SelectionListT      select_list_type;
-    Declaration[string] list_decls;
-    ModuleData[string]  list_modules;
-    string              live_search_str;
-    string[]            full_list,
-                        current_list;
+    SelectionListT      select_list_type_;
+    Declaration[string] list_decls_;
+    ModuleData[string]  list_modules_;
+    string              live_search_str_;
+    string[]            full_list_,
+                        current_list_;
 
-    PackageData     root_package;
+    PackageData     root_package_;
 }

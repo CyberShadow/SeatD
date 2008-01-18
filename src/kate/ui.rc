@@ -1,8 +1,9 @@
 <!DOCTYPE kpartgui>
 <kpartplugin name="kateseatd" library="libkateseatdplugin" version="2">
 <MenuBar>
- <Menu name="tools"><text>&amp;Tools</text>
-    <Action name="edit_insert_helloworld" />
- </Menu>
+    <Menu name="tools"><text>&amp;Tools</text>
+        <Action name="tools_list_modules" />
+        <Action name="tools_list_declarations" />
+    </Menu>
 </MenuBar>
 </kpartplugin>

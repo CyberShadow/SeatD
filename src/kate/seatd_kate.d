@@ -129,7 +129,7 @@ public:
 
     void selectionAborted()
     {
-        select_list_type = SelectionListT.none;
+        select_list_type_ = SelectionListT.none;
     }
 
 protected:
@@ -191,6 +191,22 @@ void seatdListModules(void* inst)
     }
 }
 
+void seatdListDeclarations(void* inst)
+{
+    debug {
+        (cast(SeatdKate)inst).listDeclarations();
+    }
+    else
+    {
+        try {
+            (cast(SeatdKate)inst).listDeclarations();
+        }
+        catch ( Exception e ) {
+            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
+        }
+    }
+}
+
 void seatdSelectionAborted(void* inst)
 {
     debug {
@@ -242,12 +258,12 @@ void seatdOnChar(void* inst, char c)
 void seatdSetBufferFile(void* inst, char* filepath, size_t len)
 {
     debug {
-        (cast(SeatdKate)inst).setBufferFile(filepath[0 .. len]);
+        (cast(SeatdKate)inst).setActiveFilepath(filepath[0 .. len]);
     }
     else
     {
         try {
-            (cast(SeatdKate)inst).setBufferFile(filepath[0 .. len]);
+            (cast(SeatdKate)inst).setActiveFilepath(filepath[0 .. len]);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);

@@ -17,6 +17,8 @@ version(Windows) import tango.sys.win32.Types;
 class SeatdScite : public AbstractPlugin, public Extension
 {
     ExtensionAPI    host;
+    string[int]     buffer_filepaths;
+    int             active_buffer;
 
     this()
     {
@@ -166,53 +168,57 @@ extern(Windows):
     **********************************************************************************************/
     bool Clear()
     {
-        clearBuffer();
+        buffer_filepaths[active_buffer] = null;
         return true;
     }
 
     /// ditto
     bool Load(char *filename)
     {
+        buffer_filepaths[active_buffer] = filename[0 .. strlen(filename)];
+        setActiveFilepath(buffer_filepaths[index]);
         return true;
     }
 
     /// ditto
     bool InitBuffer(int index)
     {
-        setBuffer(index);
+        active_buffer = index;
+        if ( (index in buffer_filepaths) !is null )
+            setActiveFilepath(buffer_filepaths[index]);
         return true;
     }
 
     /// ditto
     bool ActivateBuffer(int index)
     {
-        setBuffer(index);
+        active_buffer = index;
+        if ( (index in buffer_filepaths) !is null )
+            setActiveFilepath(buffer_filepaths[index]);
         return true;
     }
 
     /// ditto
     bool RemoveBuffer(int index)
     {
-        auto old = getBuffer;
-        setBuffer(index);
-        clearBuffer();
-        setBuffer(old);
+        if ( (index in buffer_filepaths) !is null )
+            buffer_filepaths[index] = null;
         return true;
     }
 
     /// ditto
     bool OnOpen(char *filename)
     {
-        string fn = filename[0..strlen(filename)];
-        loadFile(fn);
+        buffer_filepaths[active_buffer] = filename[0 .. strlen(filename)];
+        setActiveFilepath(buffer_filepaths[active_buffer]);
         return false;
     }
 
     /// ditto
     bool OnSwitchFile(char *filename)
     {
-        string fn = filename[0..strlen(filename)];
-        loadFile(fn);
+        buffer_filepaths[active_buffer] = filename[0 .. strlen(filename)];
+        setActiveFilepath(buffer_filepaths[active_buffer]);
         return false;
     }
 
@@ -253,18 +259,6 @@ extern(Windows):
         catch ( Exception e )
             log(e.msg~"\n");
         return true;
-    }
-
-    bool OnRawChar(char, uint)
-    {
-        log("OnRawChar");
-        return false;
-    }
-    
-    bool OnExecute(char *)
-    {
-        log("OnExecute");
-        return false;
     }
 
     /***********************************************************************************************
@@ -316,6 +310,16 @@ extern(Windows):
     /***********************************************************************************************
 
     ***********************************************************************************************/
+    bool OnRawChar(char, uint)
+    {
+        return false;
+    }
+    
+    bool OnExecute(char *)
+    {
+        return false;
+    }
+
     bool OnDwellStart(int, char *)
     {
         return false;

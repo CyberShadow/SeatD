@@ -67,7 +67,13 @@ void KatePluginSeatd::addView(Kate::MainWindow *win)
     new KAction(
         i18n("List Modules"), 0, this,
         SLOT( listModules() ), view->actionCollection(),
-        "edit_insert_helloworld"
+        "tools_list_modules"
+    );
+             
+    new KAction(
+        i18n("List Declarations"), 0, this,
+        SLOT( listDeclarations() ), view->actionCollection(),
+        "tools_list_declarations"
     );
     
     view->setInstance (new KInstance("kate"));
@@ -128,6 +134,15 @@ void KatePluginSeatd::listModules()
         return;
 
     seatdListModules(seatd_);
+}
+
+//=================================================================================================
+void KatePluginSeatd::listDeclarations()
+{
+    if ( !application()->activeMainWindow() )
+        return;
+
+    seatdListDeclarations(seatd_);
 }
 
 //=================================================================================================
@@ -237,6 +252,8 @@ void KatePluginSeatd::openFile(const char* filepath)
 //=================================================================================================
 void KatePluginSeatd::viewChanged()
 {
+    // TODO: check whether that files was open already and activate buffer in plugin
+    // maybe better get rid of buffer-awarenes in plugin
     Kate::Document* doc = application()->documentManager()->activeDocument();
     if ( doc )
         seatdSetBufferFile(seatd_, (const char*)doc->url().path(), doc->url().path().length());

@@ -29,6 +29,7 @@ public:
 
 public slots:
     void listModules();
+    void listDeclarations();
     void completionAborted();
 //    void completionDone();
     void completionDone(KTextEditor::CompletionEntry);
@@ -52,6 +53,7 @@ extern "C"
     void seatdSelectionDone(void* plugin, const char* text, size_t len);
     void seatdOnChar(void* plugin, char c);
     void seatdSetBufferFile(void* inst, const char* filepath, size_t len);
+    void seatdListDeclarations(void* inst);
 }
 
 #endif
