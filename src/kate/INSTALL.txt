@@ -1,0 +1,27 @@
+Prerequisites:
+- Kate 3.5
+- KDE3 devel package
+- GDC
+- Tango 0.99.4 sources
+- Rebuild (from DSSS package)
+
+Step 1 - build the Tango runtime with Position Independent Code (PIC), s.t. it can be used in a dynamically loaded library (or shared object)
+
+- Get the patch http://dsource.org/projects/tango/attachment/ticket/857/tango-0.99.4_dynload2.patch?format=raw
+- apply it in the tango base directory
+- goto tango/lib
+- execute the following:
+export DFLAGS=-fPIC
+export CFLAGS=-fPIC
+./build-gdc.sh
+./install-gdc.sh --uninstall
+./install-gdc.sh
+
+Step 2 - build the plugin
+
+- checkout SEATD
+svn co https://svn.mainia.de/svn/SEATD/trunk
+- goto src/kate
+- try running build.sh
+- here you will probably have to adjust paths etc.
+- the build.sh already copies the plugin files to you home directory. if everything worked, you can run Kate and activate the plugin in the settings.
