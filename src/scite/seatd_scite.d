@@ -16,9 +16,16 @@ version(Windows) import tango.sys.win32.Types;
 **************************************************************************************************/
 class SeatdScite : public AbstractPlugin, public Extension
 {
+    enum SelectionListT {
+        none,
+        goto_declaration,
+        goto_module
+    }
+
     ExtensionAPI    host;
     string[int]     buffer_filepaths;
     int             active_buffer;
+    SelectionListT  select_list_type_;
 
     this()
     {
@@ -227,10 +234,14 @@ extern(Windows):
     **********************************************************************************************/
     bool OnUserListSelection(int index, char* text)
     {
+        select_list_type_ = SelectionListT.none;
         try
         {
             auto str = text[0..strlen(text)];
-            onSelection(index, str);
+            if ( select_list_type_ == SelectionListT.goto_declaration )
+                gotoDeclaration(str);
+            else if ( select_list_type_ == SelectionListT.goto_module )
+                gotoModule(str);
         }
         catch ( Exception e )
             log(e.msg~"\n");
@@ -245,13 +256,20 @@ extern(Windows):
         try switch ( cmd )
         {
             case 0:
-                listDeclarations();
+                if ( select_list_type_ != SelectionListT.none ) {
+                    listDeclarations();
+                    select_list_type_ = SelectionListT.goto_declaration;
+                }
                 break;
             case 1:
-                listModules();
+                if ( select_list_type_ == SelectionListT.none ) {
+                    listModules();
+                    select_list_type_ = SelectionListT.goto_module;
+                }
                 break;
             case 2:
-                gotoDeclaration();
+                if ( select_list_type_ == SelectionListT.none )
+                    gotoDeclaration();
                 break;
             default:
                 break;
@@ -266,6 +284,8 @@ extern(Windows):
     ***********************************************************************************************/
     bool OnKey(int val, int mod)
     {
+        if ( select_list_type_ == SelectionListT.none )
+            return false;
         try
         {
             // TODO: do virtual key translation properly - patch SciTE?

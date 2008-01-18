@@ -32,6 +32,12 @@ public:
     {
         if ( instance_ is null )
             instance_ = new SeatdKate;
+        int new_decl;
+        try {
+            int hidden_decl;
+        
+        }
+        catch ( Exception e ) {}
         return instance_;
     }
     
@@ -127,11 +133,6 @@ public:
     }
 
 
-    void selectionAborted()
-    {
-        select_list_type_ = SelectionListT.none;
-    }
-
 protected:
     void* kate_instance_;
 
@@ -207,15 +208,15 @@ void seatdListDeclarations(void* inst)
     }
 }
 
-void seatdSelectionAborted(void* inst)
+void seatdGotoDeclaration(void* inst, char* text, size_t len)
 {
     debug {
-        (cast(SeatdKate)inst).selectionAborted();
+        (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
     }
     else
     {
         try {
-            (cast(SeatdKate)inst).selectionAborted();
+            (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
@@ -223,15 +224,15 @@ void seatdSelectionAborted(void* inst)
     }
 }
 
-void seatdSelectionDone(void* inst, char* text, size_t len)
+void seatdGotoModule(void* inst, char* text, size_t len)
 {
     debug {
-        (cast(SeatdKate)inst).onSelection(0, text[0 .. len]);
+        (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
     }
     else
     {
         try {
-            (cast(SeatdKate)inst).onSelection(0, text[0 .. len]);
+            (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);

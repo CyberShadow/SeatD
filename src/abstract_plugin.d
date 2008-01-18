@@ -110,35 +110,6 @@ public:
         active_filepath_ = getFullPath(filename);
     }
 
-    /**********************************************************************************************
-        Called when the user selected an item from the currently active selection list.
-        The list is assumed to be hidden/closed when this event occurs.
-    **********************************************************************************************/
-    void onSelection(int index, string text)
-    {
-        if ( text.length <= 0 )
-        {
-            if ( index >= current_list_.length ) {
-                select_list_type_ = SelectionListT.none;
-                return;
-            }
-            text = current_list_[index];
-        }
-        if ( select_list_type_ == SelectionListT.goto_declaration )
-        {
-            auto decl = text in list_decls_;
-            if ( decl !is null )
-                gotoDecl(*decl);
-        }
-        else if ( select_list_type_ == SelectionListT.goto_module )
-        {
-            auto mod = text in list_modules_;
-            if ( mod !is null )
-                gotoModule(*mod);
-        }
-        select_list_type_ = SelectionListT.none;
-    }
-
     /***********************************************************************************************
         Called when the user types text. Used to shrink the selection lists.
         Uses control character 0x08 for backspace.
@@ -148,9 +119,6 @@ public:
     ***********************************************************************************************/
     bool onChar(dchar c)
     {
-        if ( select_list_type_ == SelectionListT.none )
-            return false;
-
         if ( c == '.' || c == 8 || contains(FQN_CHARS, c) )
         {
             string[] prev_list;
@@ -195,8 +163,6 @@ public:
     ***********************************************************************************************/
     void listDeclarations()
     {
-        if ( select_list_type_ != SelectionListT.none )
-            return;
         auto modinfo = parseBuffer;
 
         if ( modinfo !is null )
@@ -213,7 +179,6 @@ public:
                 list_decls_[ident] = decl;
             }
 
-            select_list_type_ = SelectionListT.goto_declaration;
             showSelectionList();
         }
     }
@@ -223,8 +188,6 @@ public:
     ***********************************************************************************************/
     void listModules()
     {
-        if ( select_list_type_ != SelectionListT.none )
-            return;
         auto modinfo = parseBuffer;
 
         list_modules_ = null;
@@ -245,16 +208,13 @@ public:
         }
 
         showSelectionList();
-        select_list_type_ = SelectionListT.goto_module;
     }
 
     /***********************************************************************************************
 
     ***********************************************************************************************/
-    void gotoDeclaration()
+    void gotoDeclarationAtCursor()
     {
-        if ( select_list_type_ != SelectionListT.none )
-            return;
         auto bufferinfo = parseBuffer(false);
 
         auto modinfo = bufferinfo;
@@ -265,7 +225,7 @@ public:
         {
             if ( modinfo !is bufferinfo )
                 gotoModule(modinfo);
-            gotoDecl(decl);
+            gotoDeclaration(decl);
         }
     }
 
@@ -291,16 +251,30 @@ public:
         }
         openFile(path);
     }
+
+    void gotoModule(string text)
+    {
+        auto mod = text in list_modules_;
+        if ( mod !is null )
+            gotoModule(*mod);
+    }
     
     /**********************************************************************************************
         Move the cursor to the line of the given declaration.
         Assumes that the correct file is active.
     **********************************************************************************************/
-    void gotoDecl(Declaration decl)
+    void gotoDeclaration(Declaration decl)
     {
         if ( decl is null )
             return;
         setCursor(decl.line-1, decl.column-1);
+    }
+
+    void gotoDeclaration(string text)
+    {
+        auto decl = text in list_decls_;
+        if ( decl !is null )
+            gotoDeclaration(*decl);
     }
 
     /**********************************************************************************************
@@ -449,19 +423,12 @@ public:
 
 
 
-    enum SelectionListT {
-        none,
-        goto_declaration,
-        goto_module
-    }
-
     const dstring FQN_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"d;
 
 protected:
     string              active_filepath_;
     string[][string]    buffer_include_paths_;
 
-    SelectionListT      select_list_type_;
     Declaration[string] list_decls_;
     ModuleData[string]  list_modules_;
     string              live_search_str_;

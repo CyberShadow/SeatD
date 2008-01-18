@@ -1,6 +1,6 @@
 Prerequisites:
-- Kate 3.5
-- KDE3 devel package
+- Kate 3.5 (newer version might also work)
+- KDE3 devel package including tools (moc is needed) (KDE4 might also work)
 - GDC
 - Tango 0.99.4 sources
 - Rebuild (from DSSS package)
@@ -8,7 +8,8 @@ Prerequisites:
 Step 1 - build the Tango runtime with Position Independent Code (PIC), s.t. it can be used in a dynamically loaded library (or shared object)
 
 - Get the patch http://dsource.org/projects/tango/attachment/ticket/857/tango-0.99.4_dynload2.patch?format=raw
-- apply it in the tango base directory
+- apply it in the tango base directory:
+patch < tango-0.99.4_dynload2.patch
 - goto tango/lib
 - execute the following:
 export DFLAGS=-fPIC
@@ -16,6 +17,8 @@ export CFLAGS=-fPIC
 ./build-gdc.sh
 ./install-gdc.sh --uninstall
 ./install-gdc.sh
+
+- the last 2 commands require root privileges
 
 Step 2 - build the plugin
 

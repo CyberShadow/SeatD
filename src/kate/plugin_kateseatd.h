@@ -8,7 +8,48 @@
 #include <kate/plugin.h>
 #include <kate/view.h>
 #include <kate/viewmanager.h>
+#include <kate/toolviewmanager.h>
+#include <klistview.h>
 
+/**************************************************************************************************
+
+**************************************************************************************************/
+class KatePluginSeatdView : public QObject, public KXMLGUIClient
+{
+    Q_OBJECT
+
+public:
+    Kate::MainWindow*   win;
+    KListView*          listview_;
+
+    KatePluginSeatdView(void* seatd, Kate::MainWindow *w);
+    virtual ~KatePluginSeatdView();
+
+    void getBufferText(const char** text, size_t* length);
+    void showSelectionList(const char** entries, size_t count);
+
+public slots:
+    void viewChanged();
+    void listModules();
+    void listDeclarations();
+    void gotoSymbol(QListViewItem *);
+
+private:
+    void*       seatd_;
+    QWidget*    dock_;
+
+    enum ListType {
+        none,
+        decls,
+        modules
+    };
+    ListType    list_type_;
+};
+
+
+/**************************************************************************************************
+
+**************************************************************************************************/
 class KatePluginSeatd : public Kate::Plugin, Kate::PluginViewInterface
 {
     Q_OBJECT
@@ -28,32 +69,54 @@ public:
     void openFile(const char* filepath);
 
 public slots:
-    void listModules();
-    void listDeclarations();
-    void completionAborted();
-//    void completionDone();
-    void completionDone(KTextEditor::CompletionEntry);
-    void filterInsertString(KTextEditor::CompletionEntry*,QString*);
-    void viewChanged();
 
 private:
-    QPtrList<class PluginView> views_;
-    bool    selection_list_active,
-            viewChanged_connected;
+    void*   seatd_;
 
-    void* seatd_;
+    QPtrList<KatePluginSeatdView>   views_;
 };
 
+/**************************************************************************************************
 
+**************************************************************************************************/
 extern "C"
 {
     void* seatdGetInstance(void*);
     void seatdListModules(void*);
-    void seatdSelectionAborted(void* plugin);
-    void seatdSelectionDone(void* plugin, const char* text, size_t len);
+    void seatdGotoDeclaration(void* plugin, const char* text, size_t len);
+    void seatdGotoModule(void* plugin, const char* text, size_t len);
     void seatdOnChar(void* plugin, char c);
     void seatdSetBufferFile(void* inst, const char* filepath, size_t len);
     void seatdListDeclarations(void* inst);
 }
+
+static const char* const class_xpm[] = {
+"16 16 10 1",
+" 	c None",
+".	c #000000",
+"+	c #A4E8FC",
+"@	c #24D0FC",
+"#	c #001CD0",
+"$	c #0080E8",
+"%	c #C0FFFF",
+"&	c #00FFFF",
+"*	c #008080",
+"=	c #00C0C0",
+"     ..         ",
+"    .++..       ",
+"   .+++@@.      ",
+"  .@@@@@#...    ",
+"  .$$@@##.%%..  ",
+"  .$$$##.%%%&&. ",
+"  .$$$#.&&&&&*. ",
+"   ...#.==&&**. ",
+"   .++..===***. ",
+"  .+++@@.==**.  ",
+" .@@@@@#..=*.   ",
+" .$$@@##. ..    ",
+" .$$$###.       ",
+" .$$$##.        ",
+"  ..$#.         ",
+"    ..          "};
 
 #endif

@@ -21,7 +21,7 @@ public:
 
 //=================================================================================================
 KatePluginSeatd::KatePluginSeatd(QObject* parent, const char* name, const QStringList&)
-    : Kate::Plugin((Kate::Application*)parent, name), selection_list_active(false), viewChanged_connected(false)
+    : Kate::Plugin((Kate::Application*)parent, name)
 {
     seatd_ = seatdGetInstance(this);
 }
@@ -40,47 +40,13 @@ extern "C" void kateGetBufferText(void* plugin, const char** text, size_t* lengt
 //=================================================================================================
 void KatePluginSeatd::getBufferText(const char** text, size_t* length)
 {
-    Kate::Document* doc = application()->activeMainWindow()->viewManager()->activeView()->getDoc();
-    
-    QString data = doc->text();
-    char* buf = new char[data.length()];
-    memcpy(buf, (const char*)data, data.length());
-    *text = buf;
-    *length = data.length();
+    views_.at(0)->getBufferText(text, length);
 }
 
 //=================================================================================================
 void KatePluginSeatd::addView(Kate::MainWindow *win)
 {
-    if ( !viewChanged_connected )
-    {
-        viewChanged_connected = true;
-        connect(
-            win->viewManager(), SIGNAL(viewChanged()),
-            this, SLOT(viewChanged())
-        );
-    }
-
-    // TODO: doesn't this have to be deleted?
-    PluginView *view = new PluginView ();
-             
-    new KAction(
-        i18n("List Modules"), 0, this,
-        SLOT( listModules() ), view->actionCollection(),
-        "tools_list_modules"
-    );
-             
-    new KAction(
-        i18n("List Declarations"), 0, this,
-        SLOT( listDeclarations() ), view->actionCollection(),
-        "tools_list_declarations"
-    );
-    
-    view->setInstance (new KInstance("kate"));
-    view->setXMLFile("plugins/kateseatd/ui.rc");
-    win->guiFactory()->addClient(view);
-    view->win = win;
-    
+    KatePluginSeatdView *view = new KatePluginSeatdView(seatd_, win);
     views_.append(view);
 }   
 
@@ -91,58 +57,12 @@ void KatePluginSeatd::removeView(Kate::MainWindow *win)
     {
         if ( views_.at(z)->win == win )
         {
-            PluginView *view = views_.at(z);
+            KatePluginSeatdView* view = views_.at(z);
             views_.remove(view);
             win->guiFactory()->removeClient(view);
             delete view;
         }  
     }
-}
-
-//=================================================================================================
-void KatePluginSeatd::completionAborted()
-{
-    seatdSelectionAborted(seatd_);
-    Kate::View *kv = application()->activeMainWindow()->viewManager()->activeView();
-    disconnect(kv, SIGNAL(completionDone(KTextEditor::CompletionEntry)), this, 0);
-    disconnect(kv, SIGNAL(completionAborted()), this, 0);
-    disconnect(kv, SIGNAL(filterInsertString(KTextEditor::CompletionEntry*,QString*)), this, 0);
-}
-
-//=================================================================================================
-void KatePluginSeatd::completionDone(KTextEditor::CompletionEntry entry)
-{
-    seatdSelectionDone(seatd_, entry.text, entry.text.length());
-    Kate::View *kv = application()->activeMainWindow()->viewManager()->activeView();
-    disconnect(kv, SIGNAL(completionDone(KTextEditor::CompletionEntry)), this, 0);
-    disconnect(kv, SIGNAL(completionAborted()), this, 0);
-}
-
-//=================================================================================================
-void KatePluginSeatd::filterInsertString(KTextEditor::CompletionEntry* e, QString* str)
-{
-    // avoid insertion of text
-    *str = "";
-    Kate::View *kv = application()->activeMainWindow()->viewManager()->activeView();
-    disconnect(kv, SIGNAL(filterInsertString(KTextEditor::CompletionEntry*,QString*)), this, 0);
-}
-
-//=================================================================================================
-void KatePluginSeatd::listModules()
-{
-    if ( !application()->activeMainWindow() )
-        return;
-
-    seatdListModules(seatd_);
-}
-
-//=================================================================================================
-void KatePluginSeatd::listDeclarations()
-{
-    if ( !application()->activeMainWindow() )
-        return;
-
-    seatdListDeclarations(seatd_);
 }
 
 //=================================================================================================
@@ -154,38 +74,7 @@ extern "C" void kateShowSelectionList(void* plugin, const char** entries, size_t
 //=================================================================================================
 void KatePluginSeatd::showSelectionList(const char** entries, size_t count)
 {
-    Kate::View *kv = application()->activeMainWindow()->viewManager()->activeView();
-    
-    if ( !selection_list_active )
-    {
-        connect(
-            kv, SIGNAL(completionDone(KTextEditor::CompletionEntry) ),
-            this, SLOT(completionDone(KTextEditor::CompletionEntry))
-        );
-        connect(
-            kv, SIGNAL(completionAborted()),
-            this, SLOT(completionAborted())
-        );
-        connect(
-            kv, SIGNAL(filterInsertString(KTextEditor::CompletionEntry*,QString*)),
-            this, SLOT(filterInsertString(KTextEditor::CompletionEntry*,QString*))
-        );
-    }
-
-    QValueList<KTextEditor::CompletionEntry> list;
-    KTextEditor::CompletionEntry e;
-    for ( int i = 0; i < count; ++i ) {
-        e.text = entries[i];
-/*
-        e.type = "type";
-        e.comment = "comment";
-        e.prefix = "prefix";
-        e.postfix = "postfix";
-        e.userdata = "userdata";
-*/        
-        list.push_back(e);
-    }
-    kv->showCompletionBox(list, 0, false);
+    views_.at(0)->showSelectionList(entries, count);
 }
 
 //=================================================================================================
@@ -250,11 +139,129 @@ void KatePluginSeatd::openFile(const char* filepath)
 }
 
 //=================================================================================================
-void KatePluginSeatd::viewChanged()
+KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : seatd_(seatd), win(w), list_type_(none)
 {
-    // TODO: check whether that files was open already and activate buffer in plugin
-    // maybe better get rid of buffer-awarenes in plugin
-    Kate::Document* doc = application()->documentManager()->activeDocument();
-    if ( doc )
-        seatdSetBufferFile(seatd_, (const char*)doc->url().path(), doc->url().path().length());
+    setInstance(new KInstance("kate"));
+    setXMLFile("plugins/kateseatd/ui.rc");
+    w->guiFactory()->addClient(this);
+
+    new KAction(
+        i18n("List Modules"), 0, this,
+        SLOT( listModules() ), actionCollection(),
+        "tools_list_modules"
+    );
+             
+    new KAction(
+        i18n("List Declarations"), 0, this,
+        SLOT( listDeclarations() ), actionCollection(),
+        "tools_list_declarations"
+    );
+
+    dock_ = win->toolViewManager()->createToolView("kate_plugin_seatd", Kate::ToolViewManager::Left, QPixmap((const char**)class_xpm), i18n("SEATD Lists"));
+    listview_ = new KListView(dock_);
+
+    connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+//    connect(listview_, SIGNAL(rightButtonClicked(QListViewItem *, const QPoint&, int)),
+//           SLOT(slotShowContextMenu(QListViewItem *, const QPoint&, int)));
+//    connect(win->viewManager(), SIGNAL(viewChanged()), this, SLOT(slotDocChanged()));
+    //connect(symbols, SIGNAL(resizeEvent(QResizeEvent *)), this, SLOT(slotViewChanged(QResizeEvent *)));
+
+    //symbols->addColumn(i18n("Symbols"), symbols->parentWidget()->width());
+    listview_->addColumn(i18n("Name"));
+    listview_->addColumn(i18n("Position"));
+    listview_->setColumnWidthMode(1, QListView::Manual);
+    listview_->setColumnWidth ( 1, 0 );
+    listview_->setSorting(-1, FALSE);
+    listview_->setRootIsDecorated(0);
+    listview_->setTreeStepSize(10);
+    listview_->setShowToolTips(TRUE);
+
+    connect(
+        win->viewManager(), SIGNAL(viewChanged()),
+        this, SLOT(viewChanged())
+    );
+}
+
+//=================================================================================================
+KatePluginSeatdView::~KatePluginSeatdView()
+{
+    win->guiFactory()->removeClient (this);
+}
+
+//=================================================================================================
+void KatePluginSeatdView::viewChanged()
+{
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+    seatdSetBufferFile(seatd_, (const char*)doc->url().path(), doc->url().path().length());
+
+    switch ( list_type_ )
+    {
+        default:
+        case decls:
+            listDeclarations();
+            break;
+        case modules:
+            listModules();
+            break;
+    }
+}
+
+//=================================================================================================
+void KatePluginSeatdView::listModules()
+{
+    seatdListModules(seatd_);
+    list_type_ = modules;
+}
+
+//=================================================================================================
+void KatePluginSeatdView::listDeclarations()
+{
+    seatdListDeclarations(seatd_);
+    list_type_ = decls;
+}
+
+//=================================================================================================
+void KatePluginSeatdView::getBufferText(const char** text, size_t* length)
+{
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+    
+    QString data = doc->text();
+    char* buf = new char[data.length()];
+    memcpy(buf, (const char*)data, data.length());
+    *text = buf;
+    *length = data.length();
+}
+
+//=================================================================================================
+void KatePluginSeatdView::showSelectionList(const char** entries, size_t count)
+{
+    listview_->clear();
+    for ( int i = 0; i < count; ++i )
+        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+}
+
+//=================================================================================================
+void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
+{
+    switch ( list_type_ )
+    {
+        case decls:
+            seatdGotoDeclaration(seatd_, item->text(0), item->text(0).length());
+            break;
+        case modules:
+            seatdGotoModule(seatd_, item->text(0), item->text(0).length());
+            break;
+        default:
+            break;
+    }
 }

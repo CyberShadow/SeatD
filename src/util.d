@@ -106,14 +106,17 @@ string[] determineIncludePath(string filepath_str, string module_name)
         filepath = new FilePath(filepath.parent);
     }
 
-    foreach_reverse ( elm; elms[0 .. $-1] )
+    if ( elms.length > 1 )
     {
-        if ( elm == filepath.name ) {
-            include_path ~= filepath.parent;
-            filepath = new FilePath(filepath.parent);
+        foreach_reverse ( elm; elms[0 .. $-1] )
+        {
+            if ( elm == filepath.name ) {
+                include_path ~= filepath.parent;
+                filepath = new FilePath(filepath.parent);
+            }
+            else
+                break;
         }
-        else
-            break;
     }
     
     return include_path;
