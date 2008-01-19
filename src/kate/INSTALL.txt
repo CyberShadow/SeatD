@@ -1,5 +1,14 @@
 =====================================================================
-SEATD for Kate
+Installing from a binary package
+=====================================================================
+
+- Copy all files from the package to either ~/.kde or /usr, depending on whether you can to install the plugin for the current user only or system global.
+- Hope that the binary works for you
+- If so, enjoy :)
+- Else try...
+
+=====================================================================
+Building and installing from source
 =====================================================================
 
 -------------------------------------------------------------------------------
@@ -38,7 +47,7 @@ Step 2  Build the plugin
 svn co https://svn.mainia.de/svn/SEATD/trunk
 - goto src/kate
 - try running build.sh
-- here you will probably have to adjust paths etc.
+- here you might have to adjust paths etc. in the build script
 - the build.sh already copies the plugin files to you home directory. if everything worked, you can run Kate and activate the plugin in the settings.
 
 Trouble shooting

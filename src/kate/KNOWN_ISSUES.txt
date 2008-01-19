@@ -6,6 +6,8 @@ SEATD for Kate - Known Issues
 
 - Opening and switching documents may be slow than usual, espescially when opening/switching to a document for the first time during a session. This is because parsing isn't done in background, yet. SEATD for Kate will have to parse the file, all it's dependencies and it's dependencies' dependencies...
 
+- Setting include paths using Kate modelines will only work if the file is actually opened. A way to set include paths once for a whole project directory is still to be implemented.
+
 - SEATD prints error messages to stdout. It'll need a better logging facility for that.
 
 - Function local declarations are collected only from the first nesting level. Declarations that reside e.g. in a loop body will not be listed.

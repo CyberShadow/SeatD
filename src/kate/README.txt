@@ -14,3 +14,9 @@ SEATD for Kate
 
 - Only files that are open in the editor will be re-parsed and not until the editor view is swtiched to that file.
 - Imports will be parsed only once, the first time they appear as a dependency to a file that is opened in the editor.
+
+- SEATD will try to infer the include paths from the parsed file's path and the D module names.
+- It will still need explicitly set include paths to find for example Tango or any imports that do not reside in the parsed file's hierarchy.
+- You can use Kate modlines to add additional include paths. The value to set is call SEATDIncludePath. For example, you can add the following line to a D source file, to allow parsing of Phobos, Tango and such:
+// Kate: SEATDIncludePath /usr/include/d/4.1
+- SEATD is greedy when it comes to include paths. It'll use any include path set in any file that is open in the editor to parse imports of any other open file.

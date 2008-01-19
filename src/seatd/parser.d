@@ -171,7 +171,7 @@ void _S_Module(ModuleData info, out bool has_module_decl)
     switch ( _ST_rule )
     {
     case 0:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, out Declaration moduleDecl) ModuleDeclarationOpt = &_ST_children[0]._S_ModuleDeclarationOpt;
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDefsOpt = &_ST_children[1]._S_DeclDefsOpt;
 
@@ -186,7 +186,7 @@ void _S_Module(ModuleData info, out bool has_module_decl)
         break;
 
     default:
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 void _S_ModuleDeclarationOpt(ModuleData info, out Declaration moduleDecl)
@@ -195,7 +195,7 @@ void _S_ModuleDeclarationOpt(ModuleData info, out Declaration moduleDecl)
     switch ( _ST_rule )
     {
     case 1:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string name) ModuleName = &_ST_children[0]._S_ModuleName;
 
 #line 215 "grammar/main.apd"
@@ -205,11 +205,11 @@ void _S_ModuleDeclarationOpt(ModuleData info, out Declaration moduleDecl)
         info.decls.insert(moduleDecl);
         break;
     case 2:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 void _S_ModuleName(out string name)
@@ -218,7 +218,7 @@ void _S_ModuleName(out string name)
     switch ( _ST_rule )
     {
     case 3:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string name) ModuleName = &_ST_children[0]._S_ModuleName;
         void delegate(out string id) Identifier = &_ST_children[1]._S_Identifier;
 
@@ -230,7 +230,7 @@ void _S_ModuleName(out string name)
         name ~= "."~tmp;
         break;
     case 4:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 235 "grammar/main.apd"
@@ -238,7 +238,7 @@ void _S_ModuleName(out string name)
         break;
 
     default:
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 void _S_DeclDefsOpt(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
@@ -247,7 +247,7 @@ void _S_DeclDefsOpt(ModuleData info, Declaration parentDecl, ref DeclAttribute a
     switch ( _ST_rule )
     {
     case 5:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDefsOpt = &_ST_children[0]._S_DeclDefsOpt;
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDef = &_ST_children[1]._S_DeclDef;
 
@@ -257,11 +257,11 @@ void _S_DeclDefsOpt(ModuleData info, Declaration parentDecl, ref DeclAttribute a
         DeclDef(info, parentDecl, attrs);
         break;
     case 6:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 void _S_DeclDef(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
@@ -270,131 +270,131 @@ void _S_DeclDef(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs
     switch ( _ST_rule )
     {
     case 7:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 8:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) ConditionalDeclaration = &_ST_children[0]._S_ConditionalDeclaration;
 
 #line 254 "grammar/main.apd"
  ConditionalDeclaration(info, parentDecl, attrs);
         break;
     case 9:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) Declaration = &_ST_children[0]._S_Declaration;
 
 #line 257 "grammar/main.apd"
  Declaration(info, parentDecl, attrs);
         break;
     case 10:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, DeclAttribute attrs) ImportDeclaration = &_ST_children[0]._S_ImportDeclaration;
 
 #line 260 "grammar/main.apd"
  ImportDeclaration(info, attrs);
         break;
     case 11:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attr) AttributeSpecifier = &_ST_children[0]._S_AttributeSpecifier;
 
 #line 263 "grammar/main.apd"
  AttributeSpecifier(info, parentDecl, attrs);
         break;
     case 12:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) EnumDeclaration = &_ST_children[0]._S_EnumDeclaration;
 
 #line 266 "grammar/main.apd"
  EnumDeclaration(info, parentDecl, attrs);
         break;
     case 13:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 14:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) TemplateDeclaration = &_ST_children[0]._S_TemplateDeclaration;
 
 #line 271 "grammar/main.apd"
  TemplateDeclaration(info, parentDecl, attrs);
         break;
     case 15:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) FunctionTemplateDeclaration = &_ST_children[0]._S_FunctionTemplateDeclaration;
 
 #line 274 "grammar/main.apd"
  FunctionTemplateDeclaration(info, parentDecl, attrs);
         break;
     case 16:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) ClassTemplateDeclaration = &_ST_children[0]._S_ClassTemplateDeclaration;
 
 #line 277 "grammar/main.apd"
  ClassTemplateDeclaration(info, parentDecl, attrs);
         break;
     case 17:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) InterfaceTemplateDeclaration = &_ST_children[0]._S_InterfaceTemplateDeclaration;
 
 #line 280 "grammar/main.apd"
  InterfaceTemplateDeclaration(info, parentDecl, attrs);
         break;
     case 18:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) StructTemplateDeclaration = &_ST_children[0]._S_StructTemplateDeclaration;
 
 #line 283 "grammar/main.apd"
  StructTemplateDeclaration(info, parentDecl, attrs);
         break;
     case 19:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) ClassDeclaration = &_ST_children[0]._S_ClassDeclaration;
 
 #line 286 "grammar/main.apd"
  ClassDeclaration(info, parentDecl, attrs);
         break;
     case 20:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) InterfaceDeclaration = &_ST_children[0]._S_InterfaceDeclaration;
 
 #line 289 "grammar/main.apd"
  InterfaceDeclaration(info, parentDecl, attrs);
         break;
     case 21:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) AggregateDeclaration = &_ST_children[0]._S_AggregateDeclaration;
 
 #line 292 "grammar/main.apd"
  AggregateDeclaration(info, parentDecl, attrs);
         break;
     case 22:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 23:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 24:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 25:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 26:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 27:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 28:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 29:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 30:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 31:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -407,17 +407,17 @@ void _S_ConditionalDeclaration(ModuleData info, Declaration parentDecl, DeclAttr
     switch ( _ST_rule )
     {
     case 32:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 33:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) DeclarationBlock = &_ST_children[0]._S_DeclarationBlock;
 
 #line 316 "grammar/main.apd"
  DeclarationBlock(info, parentDecl, attrs);
         break;
     case 34:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) DeclarationBlock = &_ST_children[0]._S_DeclarationBlock;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) ElseBlock = &_ST_children[1]._S_DeclarationBlock;
 
@@ -437,7 +437,7 @@ void _S_ImportDeclaration(ModuleData info, DeclAttribute attrs)
     switch ( _ST_rule )
     {
     case 50:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, DeclAttribute attrs) ImportList = &_ST_children[0]._S_ImportList;
 
 #line 377 "grammar/main.apd"
@@ -455,7 +455,7 @@ void _S_ImportList(ModuleData info, DeclAttribute attrs)
     switch ( _ST_rule )
     {
     case 51:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, DeclAttribute attrs) ImportList = &_ST_children[0]._S_ImportList;
         void delegate(ModuleData info, DeclAttribute attrs) Import = &_ST_children[1]._S_Import;
 
@@ -465,7 +465,7 @@ void _S_ImportList(ModuleData info, DeclAttribute attrs)
         Import(info, attrs);
         break;
     case 52:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, DeclAttribute attrs) Import = &_ST_children[0]._S_Import;
 
 #line 391 "grammar/main.apd"
@@ -482,7 +482,7 @@ void _S_Import(ModuleData info, DeclAttribute attrs)
     switch ( _ST_rule )
     {
     case 53:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) ModuleAliasIdentifier = &_ST_children[0]._S_Identifier;
         void delegate(out string name) ModuleName = &_ST_children[1]._S_ModuleName;
 
@@ -493,7 +493,7 @@ void _S_Import(ModuleData info, DeclAttribute attrs)
         info.imports ~= imp;
         break;
     case 54:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string name) ModuleName = &_ST_children[0]._S_ModuleName;
 
 #line 404 "grammar/main.apd"
@@ -513,14 +513,14 @@ void _S_AttributeSpecifier(ModuleData info, Declaration parentDecl, ref DeclAttr
     switch ( _ST_rule )
     {
     case 61:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attributes = &_ST_children[0]._S_Attributes;
 
 #line 435 "grammar/main.apd"
  Attributes(attr);
         break;
     case 62:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attributes = &_ST_children[0]._S_Attributes;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) DeclarationBlock = &_ST_children[1]._S_DeclarationBlock;
 
@@ -540,92 +540,92 @@ void _S_Attribute(ref DeclAttribute attr)
     switch ( _ST_rule )
     {
     case 63:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 446 "grammar/main.apd"
  attr |= atSynchronized;
         break;
     case 64:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 447 "grammar/main.apd"
  attr |= atDeprecated;
         break;
     case 65:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 448 "grammar/main.apd"
  attr |= atPrivate;
         break;
     case 66:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 449 "grammar/main.apd"
  attr |= atPackage;
         break;
     case 67:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 450 "grammar/main.apd"
  attr |= atProtected;
         break;
     case 68:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 451 "grammar/main.apd"
  attr |= atPublic;
         break;
     case 69:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 452 "grammar/main.apd"
  attr |= atExport;
         break;
     case 70:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 453 "grammar/main.apd"
  attr |= atStatic;
         break;
     case 71:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 454 "grammar/main.apd"
  attr |= atOverride;
         break;
     case 72:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 455 "grammar/main.apd"
  attr |= atAbstract;
         break;
     case 73:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 456 "grammar/main.apd"
  attr |= atAuto;
         break;
     case 74:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 457 "grammar/main.apd"
  attr |= atScope;
         break;
     case 75:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Constness = &_ST_children[0]._S_Constness;
 
 #line 458 "grammar/main.apd"
  Constness(attr);
         break;
     case 76:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 77:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 78:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -638,7 +638,7 @@ void _S_Attributes(ref DeclAttribute attr)
     switch ( _ST_rule )
     {
     case 79:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attributes = &_ST_children[0]._S_Attributes;
         void delegate(ref DeclAttribute attr) Attribute = &_ST_children[1]._S_Attribute;
 
@@ -646,7 +646,7 @@ void _S_Attributes(ref DeclAttribute attr)
  Attributes(attr); Attribute(attr);
         break;
     case 80:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attribute = &_ST_children[0]._S_Attribute;
 
 #line 470 "grammar/main.apd"
@@ -663,14 +663,14 @@ void _S_DeclarationBlock(ModuleData info, Declaration parentDecl, DeclAttribute 
     switch ( _ST_rule )
     {
     case 81:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDefsOpt = &_ST_children[0]._S_DeclDefsOpt;
 
 #line 476 "grammar/main.apd"
  DeclDefsOpt(info, parentDecl, attrs);
         break;
     case 82:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDef = &_ST_children[0]._S_DeclDef;
 
 #line 479 "grammar/main.apd"
@@ -687,13 +687,13 @@ void _S_LinkageAttribute()
     switch ( _ST_rule )
     {
     case 83:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 84:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 85:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -706,42 +706,42 @@ void _S_FunctionBody(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 90:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BodyStatement = &_ST_children[0]._S_BodyStatement;
 
 #line 508 "grammar/main.apd"
  BodyStatement(info, parentDecl);
         break;
     case 91:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BodyStatement = &_ST_children[0]._S_BodyStatement;
 
 #line 511 "grammar/main.apd"
  BodyStatement(info, parentDecl);
         break;
     case 92:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BodyStatement = &_ST_children[0]._S_BodyStatement;
 
 #line 514 "grammar/main.apd"
  BodyStatement(info, parentDecl);
         break;
     case 93:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BodyStatement = &_ST_children[0]._S_BodyStatement;
 
 #line 517 "grammar/main.apd"
  BodyStatement(info, parentDecl);
         break;
     case 94:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BlockStatement = &_ST_children[0]._S_BlockStatement;
 
 #line 520 "grammar/main.apd"
  BlockStatement(info, parentDecl);
         break;
     case 95:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BodyStatement = &_ST_children[0]._S_BodyStatement;
 
 #line 523 "grammar/main.apd"
@@ -758,14 +758,14 @@ void _S_FunctionBodyOpt(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 96:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) FunctionBody = &_ST_children[0]._S_FunctionBody;
 
 #line 529 "grammar/main.apd"
  FunctionBody(info, parentDecl);
         break;
     case 97:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -778,7 +778,7 @@ void _S_BodyStatement(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 101:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BlockStatement = &_ST_children[0]._S_BlockStatement;
 
 #line 548 "grammar/main.apd"
@@ -795,7 +795,7 @@ void _S_ClassDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute 
     switch ( _ST_rule )
     {
     case 102:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration classDecl, DeclAttribute attrs) ClassBody = &_ST_children[1]._S_ClassBody;
 
@@ -820,10 +820,10 @@ void _S_ClassBody(ModuleData info, Declaration classDecl, DeclAttribute attrs)
     switch ( _ST_rule )
     {
     case 115:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 116:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration classDecl, ref DeclAttribute attrs) ClassBodyDeclarations = &_ST_children[0]._S_ClassBodyDeclarations;
 
 #line 60 "grammar/class_struct_iface.apd"
@@ -841,7 +841,7 @@ void _S_ClassBodyDeclarations(ModuleData info, Declaration classDecl, ref DeclAt
     switch ( _ST_rule )
     {
     case 117:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration classDecl, ref DeclAttribute attrs) ClassBodyDeclarations = &_ST_children[0]._S_ClassBodyDeclarations;
         void delegate(ModuleData info, Declaration classDecl, ref DeclAttribute attrs) ClassBodyDeclaration = &_ST_children[1]._S_ClassBodyDeclaration;
 
@@ -851,7 +851,7 @@ void _S_ClassBodyDeclarations(ModuleData info, Declaration classDecl, ref DeclAt
         ClassBodyDeclaration(info, classDecl, attrs);
         break;
     case 118:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration classDecl, ref DeclAttribute attrs) ClassBodyDeclaration = &_ST_children[0]._S_ClassBodyDeclaration;
 
 #line 74 "grammar/class_struct_iface.apd"
@@ -869,17 +869,17 @@ void _S_ClassBodyDeclaration(ModuleData info, Declaration classDecl, ref DeclAtt
     switch ( _ST_rule )
     {
     case 119:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDef = &_ST_children[0]._S_DeclDef;
 
 #line 82 "grammar/class_struct_iface.apd"
  DeclDef(info, classDecl, attrs);
         break;
     case 120:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 121:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -892,7 +892,7 @@ void _S_Constructor()
     switch ( _ST_rule )
     {
     case 122:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -905,7 +905,7 @@ void _S_Destructor()
     switch ( _ST_rule )
     {
     case 123:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -918,7 +918,7 @@ void _S_StaticDestructor()
     switch ( _ST_rule )
     {
     case 125:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -931,10 +931,10 @@ void _S_Invariant()
     switch ( _ST_rule )
     {
     case 126:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 127:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -947,7 +947,7 @@ void _S_UnitTest()
     switch ( _ST_rule )
     {
     case 128:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -960,7 +960,7 @@ void _S_ClassAllocator()
     switch ( _ST_rule )
     {
     case 129:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -973,7 +973,7 @@ void _S_InterfaceDeclaration(ModuleData info, Declaration parentDecl, DeclAttrib
     switch ( _ST_rule )
     {
     case 131:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) InterfaceBody = &_ST_children[1]._S_InterfaceBody;
 
@@ -998,7 +998,7 @@ void _S_InterfaceBody(ModuleData info, Declaration parentDecl, DeclAttribute att
     switch ( _ST_rule )
     {
     case 138:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDefsOpt = &_ST_children[0]._S_DeclDefsOpt;
 
 #line 167 "grammar/class_struct_iface.apd"
@@ -1038,7 +1038,7 @@ void _S_AggregateDeclaration(ModuleData info, Declaration parentDecl, DeclAttrib
         StructBody(info, structDecl, body_attrs);
         break;
     case 140:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string value) Tag = &_ST_children[0]._S_Tag;
         void delegate(out string id) IdentifierOpt = &_ST_children[1]._S_IdentifierOpt;
 
@@ -1067,13 +1067,13 @@ void _S_Tag(out string value)
     switch ( _ST_rule )
     {
     case 141:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 211 "grammar/class_struct_iface.apd"
  value = "struct";
         break;
     case 142:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 212 "grammar/class_struct_iface.apd"
  value = "union";
@@ -1089,20 +1089,20 @@ void _S_StructBody(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
     switch ( _ST_rule )
     {
     case 143:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 144:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 145:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) StructBodyDeclarations = &_ST_children[0]._S_StructBodyDeclarations;
 
 #line 222 "grammar/class_struct_iface.apd"
  StructBodyDeclarations(info, parentDecl, attrs);
         break;
     case 146:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) StructBodyDeclarations = &_ST_children[0]._S_StructBodyDeclarations;
 
 #line 225 "grammar/class_struct_iface.apd"
@@ -1119,7 +1119,7 @@ void _S_StructBodyDeclarations(ModuleData info, Declaration parentDecl, DeclAttr
     switch ( _ST_rule )
     {
     case 147:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) StructBodyDeclarations = &_ST_children[0]._S_StructBodyDeclarations;
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) StructBodyDeclaration = &_ST_children[1]._S_StructBodyDeclaration;
 
@@ -1129,7 +1129,7 @@ void _S_StructBodyDeclarations(ModuleData info, Declaration parentDecl, DeclAttr
         StructBodyDeclaration(info, parentDecl, attrs);
         break;
     case 148:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) StructBodyDeclaration = &_ST_children[0]._S_StructBodyDeclaration;
 
 #line 237 "grammar/class_struct_iface.apd"
@@ -1146,17 +1146,17 @@ void _S_StructBodyDeclaration(ModuleData info, Declaration parentDecl, ref DeclA
     switch ( _ST_rule )
     {
     case 149:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDef = &_ST_children[0]._S_DeclDef;
 
 #line 243 "grammar/class_struct_iface.apd"
  DeclDef(info, parentDecl, attrs);
         break;
     case 150:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 151:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1169,14 +1169,14 @@ void _S_Statement(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 156:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) NonEmptyStatement = &_ST_children[0]._S_NonEmptyStatement;
 
 #line 15 "grammar/statements.apd"
  NonEmptyStatement(info, parentDecl);
         break;
     case 157:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) BlockStatement = &_ST_children[0]._S_BlockStatement;
 
 #line 18 "grammar/statements.apd"
@@ -1193,7 +1193,7 @@ void _S_StatementList(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 158:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) StatementList = &_ST_children[0]._S_StatementList;
         void delegate(ModuleData info, Declaration parentDecl) Statement = &_ST_children[1]._S_Statement;
 
@@ -1201,7 +1201,7 @@ void _S_StatementList(ModuleData info, Declaration parentDecl)
  StatementList(info, parentDecl); Statement(info, parentDecl);
         break;
     case 159:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) Statement = &_ST_children[0]._S_Statement;
 
 #line 27 "grammar/statements.apd"
@@ -1218,7 +1218,7 @@ void _S_NonEmptyStatement(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 164:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDef = &_ST_children[0]._S_DeclDef;
 
 #line 45 "grammar/statements.apd"
@@ -1227,7 +1227,7 @@ void _S_NonEmptyStatement(ModuleData info, Declaration parentDecl)
         DeclDef(info, parentDecl, attrs);
         break;
     case 165:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) NonEmptyNoDeclStatement = &_ST_children[0]._S_NonEmptyNoDeclStatement;
 
 #line 51 "grammar/statements.apd"
@@ -1244,76 +1244,76 @@ void _S_NonEmptyNoDeclStatement(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 166:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 167:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 168:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 169:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 170:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 171:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 172:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 173:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 174:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 175:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 176:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 177:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 178:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 179:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 180:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 181:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 182:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 183:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 184:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 185:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 186:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 187:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 188:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 189:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1326,10 +1326,10 @@ void _S_BlockStatement(ModuleData info, Declaration parentDecl)
     switch ( _ST_rule )
     {
     case 195:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 196:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl) StatementList = &_ST_children[0]._S_StatementList;
 
 #line 104 "grammar/statements.apd"
@@ -1346,7 +1346,7 @@ void _S_Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs
     switch ( _ST_rule )
     {
     case 255:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate() TypedefAlias = &_ST_children[0]._S_TypedefAlias;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) Declaration2 = &_ST_children[1]._S_Declaration2;
 
@@ -1372,7 +1372,7 @@ void _S_Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs
  Attributes(attrs);
         break;
     case 258:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attributes = &_ST_children[0]._S_Attributes;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) Declaration2 = &_ST_children[1]._S_Declaration2;
 
@@ -1380,7 +1380,7 @@ void _S_Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs
  Attributes(attrs); Declaration2(info, parentDecl, attrs);
         break;
     case 259:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref DeclAttribute attr) Attributes = &_ST_children[0]._S_Attributes;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) IdentifierSimpleInitializerList = &_ST_children[1]._S_IdentifierSimpleInitializerList;
 
@@ -1388,7 +1388,7 @@ void _S_Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs
  Attributes(attrs);
         break;
     case 260:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) Declaration2 = &_ST_children[0]._S_Declaration2;
 
 #line 35 "grammar/declarations.apd"
@@ -1405,10 +1405,10 @@ void _S_TypedefAlias()
     switch ( _ST_rule )
     {
     case 261:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 262:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1447,7 +1447,7 @@ void _S_Declaration2(ModuleData info, Declaration parentDecl, DeclAttribute attr
         FunctionBody(info, decl);
         break;
     case 264:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
         void delegate(ref string type, ref string[] idents) Declarators = &_ST_children[1]._S_Declarators;
 
@@ -1477,7 +1477,7 @@ void _S_IdentifierSimpleInitializerList(ModuleData info, Declaration parentDecl,
     switch ( _ST_rule )
     {
     case 265:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) IdentifierSimpleInitializerList = &_ST_children[0]._S_IdentifierSimpleInitializerList;
         void delegate(out string id) Identifier = &_ST_children[1]._S_Identifier;
 
@@ -1490,7 +1490,7 @@ void _S_IdentifierSimpleInitializerList(ModuleData info, Declaration parentDecl,
         info.decls.insert(decl);
         break;
     case 266:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 97 "grammar/declarations.apd"
@@ -1511,7 +1511,7 @@ void _S_Declarators(ref string type, ref string[] idents)
     switch ( _ST_rule )
     {
     case 267:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) DeclaratorInitializer = &_ST_children[0]._S_DeclaratorInitializer;
 
 #line 108 "grammar/declarations.apd"
@@ -1521,7 +1521,7 @@ void _S_Declarators(ref string type, ref string[] idents)
         idents ~= ident;
         break;
     case 268:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) DeclaratorInitializer = &_ST_children[0]._S_DeclaratorInitializer;
         void delegate(ref string[] idents) IdentifierInitializerList = &_ST_children[1]._S_IdentifierInitializerList;
 
@@ -1543,14 +1543,14 @@ void _S_DeclaratorInitializer(ref string type, out string ident)
     switch ( _ST_rule )
     {
     case 269:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) Declarator = &_ST_children[0]._S_Declarator;
 
 #line 126 "grammar/declarations.apd"
  Declarator(type, ident);
         break;
     case 270:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) Declarator = &_ST_children[0]._S_Declarator;
 
 #line 129 "grammar/declarations.apd"
@@ -1567,7 +1567,7 @@ void _S_IdentifierInitializerList(ref string[] idents)
     switch ( _ST_rule )
     {
     case 271:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string[] idents) IdentifierInitializerList = &_ST_children[0]._S_IdentifierInitializerList;
         void delegate(out string ident) IdentifierInitializer = &_ST_children[1]._S_IdentifierInitializer;
 
@@ -1579,7 +1579,7 @@ void _S_IdentifierInitializerList(ref string[] idents)
         idents ~= ident;
         break;
     case 272:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string ident) IdentifierInitializer = &_ST_children[0]._S_IdentifierInitializer;
 
 #line 143 "grammar/declarations.apd"
@@ -1599,14 +1599,14 @@ void _S_IdentifierInitializer(out string ident)
     switch ( _ST_rule )
     {
     case 273:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 153 "grammar/declarations.apd"
  Identifier(ident);
         break;
     case 274:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 156 "grammar/declarations.apd"
@@ -1623,17 +1623,17 @@ void _S_BasicType(out string type)
     switch ( _ST_rule )
     {
     case 275:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicTypeNoIdList = &_ST_children[0]._S_BasicTypeNoIdList;
 
 #line 162 "grammar/declarations.apd"
  BasicTypeNoIdList(type);
         break;
     case 276:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 277:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1646,145 +1646,145 @@ void _S_BasicTypeNoIdList(out string type)
     switch ( _ST_rule )
     {
     case 278:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 176 "grammar/declarations.apd"
  type = "b";
         break;
     case 279:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 179 "grammar/declarations.apd"
  type = "g";
         break;
     case 280:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 182 "grammar/declarations.apd"
  type = "h";
         break;
     case 281:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 185 "grammar/declarations.apd"
  type = "s";
         break;
     case 282:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 188 "grammar/declarations.apd"
  type = "t";
         break;
     case 283:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 191 "grammar/declarations.apd"
  type = "i";
         break;
     case 284:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 194 "grammar/declarations.apd"
  type = "k";
         break;
     case 285:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 197 "grammar/declarations.apd"
  type = "l";
         break;
     case 286:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 200 "grammar/declarations.apd"
  type = "m";
         break;
     case 287:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 203 "grammar/declarations.apd"
  type = "a";
         break;
     case 288:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 206 "grammar/declarations.apd"
  type = "u";
         break;
     case 289:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 209 "grammar/declarations.apd"
  type = "w";
         break;
     case 290:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 212 "grammar/declarations.apd"
  type = "f";
         break;
     case 291:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 215 "grammar/declarations.apd"
  type = "d";
         break;
     case 292:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 218 "grammar/declarations.apd"
  type = "e";
         break;
     case 293:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 221 "grammar/declarations.apd"
  type = "o";
         break;
     case 294:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 224 "grammar/declarations.apd"
  type = "p";
         break;
     case 295:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 227 "grammar/declarations.apd"
  type = "j";
         break;
     case 296:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 230 "grammar/declarations.apd"
  type = "q";
         break;
     case 297:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 233 "grammar/declarations.apd"
  type = "r";
         break;
     case 298:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 236 "grammar/declarations.apd"
  type = "c";
         break;
     case 299:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 239 "grammar/declarations.apd"
  type = "v";
         break;
     case 300:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 301:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 302:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1797,22 +1797,22 @@ void _S_BasicType2(ref string type)
     switch ( _ST_rule )
     {
     case 303:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 251 "grammar/declarations.apd"
  type = "P"~type;
         break;
     case 304:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 254 "grammar/declarations.apd"
  type = "A"~type;
         break;
     case 305:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 306:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) Type = &_ST_children[0]._S_Type;
 
 #line 259 "grammar/declarations.apd"
@@ -1822,10 +1822,10 @@ void _S_BasicType2(ref string type)
         type = "H"~key_type~type;
         break;
     case 307:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 308:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameters = &_ST_children[0]._S_Parameters;
 
 #line 268 "grammar/declarations.apd"
@@ -1834,7 +1834,7 @@ void _S_BasicType2(ref string type)
         type = "D"~type~"Z";
         break;
     case 309:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameters = &_ST_children[0]._S_Parameters;
 
 #line 274 "grammar/declarations.apd"
@@ -1853,7 +1853,7 @@ void _S_Declarator(ref string type, out string ident)
     switch ( _ST_rule )
     {
     case 312:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) BasicType2 = &_ST_children[0]._S_BasicType2;
         void delegate(ref string type, out string ident) DeclaratorOpt = &_ST_children[1]._S_DeclaratorOpt;
 
@@ -1863,7 +1863,7 @@ void _S_Declarator(ref string type, out string ident)
         DeclaratorOpt(type, ident);
         break;
     case 313:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ref string type) DeclaratorSuffixesOpt = &_ST_children[1]._S_DeclaratorSuffixesOpt;
 
@@ -1873,7 +1873,7 @@ void _S_Declarator(ref string type, out string ident)
         DeclaratorSuffixesOpt(type);
         break;
     case 314:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) Declarator = &_ST_children[0]._S_Declarator;
         void delegate(ref string type) DeclaratorSuffixesOpt = &_ST_children[1]._S_DeclaratorSuffixesOpt;
 
@@ -1893,14 +1893,14 @@ void _S_DeclaratorOpt(ref string type, out string ident)
     switch ( _ST_rule )
     {
     case 315:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type, out string ident) Declarator = &_ST_children[0]._S_Declarator;
 
 #line 310 "grammar/declarations.apd"
  Declarator(type, ident);
         break;
     case 316:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1913,7 +1913,7 @@ void _S_DeclaratorSuffixesOpt(ref string type)
     switch ( _ST_rule )
     {
     case 317:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) DeclaratorSuffixesOpt = &_ST_children[0]._S_DeclaratorSuffixesOpt;
         void delegate(ref string type) DeclaratorSuffix = &_ST_children[1]._S_DeclaratorSuffix;
 
@@ -1923,7 +1923,7 @@ void _S_DeclaratorSuffixesOpt(ref string type)
         DeclaratorSuffix(type);
         break;
     case 318:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -1936,16 +1936,16 @@ void _S_DeclaratorSuffix(ref string type)
     switch ( _ST_rule )
     {
     case 319:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 329 "grammar/declarations.apd"
  type = "A"~type;
         break;
     case 320:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 321:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) Type = &_ST_children[0]._S_Type;
 
 #line 334 "grammar/declarations.apd"
@@ -1955,7 +1955,7 @@ void _S_DeclaratorSuffix(ref string type)
         type = "H"~key_type~type;
         break;
     case 322:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameters = &_ST_children[0]._S_Parameters;
 
 #line 341 "grammar/declarations.apd"
@@ -1975,17 +1975,17 @@ void _S_Type(out string type)
     switch ( _ST_rule )
     {
     case 328:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 329:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
 
 #line 367 "grammar/declarations.apd"
  BasicType(type);
         break;
     case 330:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
         void delegate(ref string type) Declarator2 = &_ST_children[1]._S_Declarator2;
 
@@ -2005,14 +2005,14 @@ void _S_TypeOpt(out string type)
     switch ( _ST_rule )
     {
     case 331:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) Type = &_ST_children[0]._S_Type;
 
 #line 379 "grammar/declarations.apd"
  Type(type);
         break;
     case 332:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -2025,19 +2025,19 @@ void _S_Constness(ref DeclAttribute attr)
     switch ( _ST_rule )
     {
     case 333:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 386 "grammar/declarations.apd"
  attr |= atConst;
         break;
     case 334:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 387 "grammar/declarations.apd"
  attr |= atFinal;
         break;
     case 335:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 388 "grammar/declarations.apd"
  attr |= atInvariant;
@@ -2053,14 +2053,14 @@ void _S_Declarator2(ref string type)
     switch ( _ST_rule )
     {
     case 336:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) BasicType2 = &_ST_children[0]._S_BasicType2;
 
 #line 394 "grammar/declarations.apd"
  BasicType2(type);
         break;
     case 337:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) BasicType2 = &_ST_children[0]._S_BasicType2;
         void delegate(ref string type) Declarator2 = &_ST_children[1]._S_Declarator2;
 
@@ -2070,7 +2070,7 @@ void _S_Declarator2(ref string type)
         Declarator2(type);
         break;
     case 338:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Declarator2 = &_ST_children[0]._S_Declarator2;
         void delegate(ref string type) DeclaratorSuffixesOpt = &_ST_children[1]._S_DeclaratorSuffixesOpt;
 
@@ -2088,10 +2088,10 @@ void _S_Parameters(ref string type)
     switch ( _ST_rule )
     {
     case 339:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 340:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterList = &_ST_children[0]._S_ParameterList;
 
 #line 411 "grammar/declarations.apd"
@@ -2109,14 +2109,14 @@ void _S_ParameterListOpt(ref string type)
     switch ( _ST_rule )
     {
     case 341:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterList = &_ST_children[0]._S_ParameterList;
 
 #line 419 "grammar/declarations.apd"
  ParameterList(type);
         break;
     case 342:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -2129,14 +2129,14 @@ void _S_ParameterList(ref string type)
     switch ( _ST_rule )
     {
     case 343:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameter = &_ST_children[0]._S_Parameter;
 
 #line 427 "grammar/declarations.apd"
  Parameter(type);
         break;
     case 344:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameter = &_ST_children[0]._S_Parameter;
         void delegate(ref string type) ParameterList = &_ST_children[1]._S_ParameterList;
 
@@ -2146,14 +2146,14 @@ void _S_ParameterList(ref string type)
         ParameterList(type);
         break;
     case 345:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameter = &_ST_children[0]._S_Parameter;
 
 #line 437 "grammar/declarations.apd"
  Parameter(type);
         break;
     case 346:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 441 "grammar/declarations.apd"
  type ~= "Y";
@@ -2169,7 +2169,7 @@ void _S_Parameter(ref string type)
     switch ( _ST_rule )
     {
     case 347:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameter2 = &_ST_children[0]._S_Parameter2;
 
 #line 447 "grammar/declarations.apd"
@@ -2177,7 +2177,7 @@ void _S_Parameter(ref string type)
         Parameter2(type);
         break;
     case 348:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) Parameter2 = &_ST_children[0]._S_Parameter2;
 
 #line 452 "grammar/declarations.apd"
@@ -2185,7 +2185,7 @@ void _S_Parameter(ref string type)
         Parameter2(type);
         break;
     case 349:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterStorageClasses = &_ST_children[0]._S_ParameterStorageClasses;
         void delegate(ref string type) Parameter2 = &_ST_children[1]._S_Parameter2;
 
@@ -2195,7 +2195,7 @@ void _S_Parameter(ref string type)
         Parameter2(type);
         break;
     case 350:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterStorageClasses = &_ST_children[0]._S_ParameterStorageClasses;
         void delegate(ref string type) Parameter2 = &_ST_children[1]._S_Parameter2;
 
@@ -2215,7 +2215,7 @@ void _S_Parameter2(ref string type)
     switch ( _ST_rule )
     {
     case 351:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
         void delegate(ref string type, out string ident) DeclaratorOpt = &_ST_children[1]._S_DeclaratorOpt;
 
@@ -2227,7 +2227,7 @@ void _S_Parameter2(ref string type)
         type ~= tmp;
         break;
     case 352:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
         void delegate(ref string type, out string ident) DeclaratorOpt = &_ST_children[1]._S_DeclaratorOpt;
 
@@ -2249,7 +2249,7 @@ void _S_ParameterStorageClasses(ref string type)
     switch ( _ST_rule )
     {
     case 353:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterStorageClasses = &_ST_children[0]._S_ParameterStorageClasses;
         void delegate(ref string type) ParameterStorageClass = &_ST_children[1]._S_ParameterStorageClass;
 
@@ -2259,7 +2259,7 @@ void _S_ParameterStorageClasses(ref string type)
         ParameterStorageClass(type);
         break;
     case 354:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ref string type) ParameterStorageClass = &_ST_children[0]._S_ParameterStorageClass;
 
 #line 497 "grammar/declarations.apd"
@@ -2276,28 +2276,28 @@ void _S_ParameterStorageClass(ref string type)
     switch ( _ST_rule )
     {
     case 355:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 503 "grammar/declarations.apd"
  type ~= "x";
         break;
     case 356:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 506 "grammar/declarations.apd"
  type ~= "y";
         break;
     case 357:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 509 "grammar/declarations.apd"
  type ~= "x";
         break;
     case 358:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 359:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -2310,7 +2310,7 @@ void _S_EnumDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute a
     switch ( _ST_rule )
     {
     case 379:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration parent_decl) EnumBody = &_ST_children[1]._S_EnumBody;
 
@@ -2324,7 +2324,7 @@ void _S_EnumDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute a
         EnumBody(info, decl);
         break;
     case 380:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parent_decl) EnumBody = &_ST_children[0]._S_EnumBody;
 
 #line 579 "grammar/declarations.apd"
@@ -2341,10 +2341,10 @@ void _S_EnumBody(ModuleData info, Declaration parent_decl)
     switch ( _ST_rule )
     {
     case 383:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 384:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parent_decl) EnumMembers = &_ST_children[0]._S_EnumMembers;
 
 #line 592 "grammar/declarations.apd"
@@ -2361,7 +2361,7 @@ void _S_EnumMembers(ModuleData info, Declaration parent_decl)
     switch ( _ST_rule )
     {
     case 385:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parent_decl) EnumMembers = &_ST_children[0]._S_EnumMembers;
         void delegate(out string ident) EnumMember = &_ST_children[1]._S_EnumMember;
 
@@ -2374,14 +2374,14 @@ void _S_EnumMembers(ModuleData info, Declaration parent_decl)
         info.decls.insert(decl);
         break;
     case 386:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(ModuleData info, Declaration parent_decl) EnumMembers = &_ST_children[0]._S_EnumMembers;
 
 #line 607 "grammar/declarations.apd"
  EnumMembers(info, parent_decl);
         break;
     case 387:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string ident) EnumMember = &_ST_children[0]._S_EnumMember;
 
 #line 610 "grammar/declarations.apd"
@@ -2402,7 +2402,7 @@ void _S_EnumMember(out string ident)
     switch ( _ST_rule )
     {
     case 388:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 621 "grammar/declarations.apd"
@@ -2419,7 +2419,7 @@ void _S_TemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribu
     switch ( _ST_rule )
     {
     case 391:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs) DeclDefsOpt = &_ST_children[1]._S_DeclDefsOpt;
 
@@ -2444,7 +2444,7 @@ void _S_ClassTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAt
     switch ( _ST_rule )
     {
     case 416:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration classDecl, DeclAttribute attrs) ClassBody = &_ST_children[1]._S_ClassBody;
 
@@ -2469,7 +2469,7 @@ void _S_InterfaceTemplateDeclaration(ModuleData info, Declaration parentDecl, De
     switch ( _ST_rule )
     {
     case 417:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) InterfaceBody = &_ST_children[1]._S_InterfaceBody;
 
@@ -2494,7 +2494,7 @@ void _S_StructTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclA
     switch ( _ST_rule )
     {
     case 418:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
         void delegate(ModuleData info, Declaration parentDecl, DeclAttribute attrs) StructBody = &_ST_children[1]._S_StructBody;
 
@@ -2544,7 +2544,7 @@ void _S_TypeIdent(out string ident)
     switch ( _ST_rule )
     {
     case 420:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) BasicType = &_ST_children[0]._S_BasicType;
         void delegate(out string id) Identifier = &_ST_children[1]._S_Identifier;
 
@@ -2552,7 +2552,7 @@ void _S_TypeIdent(out string ident)
  Identifier(ident);
         break;
     case 421:
-        debug assert(_ST_children.length == 2);
+        debug assert(_ST_children.length == 2, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string type) Type = &_ST_children[0]._S_Type;
         void delegate(out string id) Identifier = &_ST_children[1]._S_Identifier;
 
@@ -2570,22 +2570,22 @@ void _S_Integer(string val)
     switch ( _ST_rule )
     {
     case 612:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 48 "grammar/lexical.apd"
  val = _ST_match;
         break;
     case 613:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 51 "grammar/lexical.apd"
  val = _ST_match;
         break;
     case 614:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
     case 615:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -2598,7 +2598,7 @@ void _S_Identifier(out string id)
     switch ( _ST_rule )
     {
     case 621:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
 
 #line 75 "grammar/lexical.apd"
  id = _ST_match;
@@ -2614,14 +2614,14 @@ void _S_IdentifierOpt(out string id)
     switch ( _ST_rule )
     {
     case 622:
-        debug assert(_ST_children.length == 1);
+        debug assert(_ST_children.length == 1, __FILE__~"("~.toString(__LINE__)~")");
         void delegate(out string id) Identifier = &_ST_children[0]._S_Identifier;
 
 #line 81 "grammar/lexical.apd"
  Identifier(id);
         break;
     case 623:
-        debug assert(_ST_children.length == 0);
+        debug assert(_ST_children.length == 0, __FILE__~"("~.toString(__LINE__)~")");
         break;
 
     default:
@@ -14649,7 +14649,7 @@ bool mainLexer(string input, out uint token, out string match)
             case 948:
                 goto finish948;
             default:
-                assert(0);
+                assert(0, __FILE__~"("~.toString(__LINE__)~")");
         }
     }
 
@@ -16400,7 +16400,7 @@ bool wsLexer(string input, out uint token, out string match)
                     goto finish25;
                 break;
             default:
-                assert(0);
+                assert(0, __FILE__~"("~.toString(__LINE__)~")");
         }
     }
 
@@ -16493,6 +16493,7 @@ bool wsLexer(string input, out uint token, out string match)
 version(Tango)
 {
     import tango.text.convert.Layout;
+    import tango.text.convert.Integer;
     import tango.text.Util;
     import tango.io.Stdout;
 
@@ -16571,7 +16572,7 @@ struct Stack(T)
 
     void pop(size_t num)
     {
-        assert(_top>=num);
+        assert(_top>=num, __FILE__~"("~.toString(__LINE__)~")");
         if ( num >= _top )
             _top = 0;
         else
@@ -16580,25 +16581,25 @@ struct Stack(T)
 
     T pop()
     {
-        assert(_top>0);
+        assert(_top>0, __FILE__~"("~.toString(__LINE__)~")");
         return stack[--_top];
     }
 
     T* popPtr()
     {
-        assert(_top>0);
+        assert(_top>0, __FILE__~"("~.toString(__LINE__)~")");
         return &stack[--_top];
     }
 
     T top()
     {
-        assert(_top>0);
+        assert(_top>0, __FILE__~"("~.toString(__LINE__)~")");
         return stack[_top-1];
     }
 
     T* topPtr()
     {
-        assert(_top>0);
+        assert(_top>0, __FILE__~"("~.toString(__LINE__)~")");
         return &stack[_top-1];
     }
 
@@ -17008,7 +17009,7 @@ abstract class GLRParser
                 else
                 {
                     foreach ( token; lookaheadForNT(ri.nt_index, stack.top.index) ) {
-                        assert(token < FIRST_NT);
+                        assert(token < FIRST_NT, __FILE__~"("~.toString(__LINE__)~")");
                         expected_symbols["\""~lexeme_names[token-EOS]~"\""] = true;
                     }
                 }
@@ -30371,7 +30372,7 @@ class MainGrammar : public GLRParser
                     writefln("%sgoto %d", indent, stack.top.index);
                 }
                 else
-                    assert(0);
+                    assert(0, __FILE__~"("~.toString(__LINE__)~")");
             }
             else
                 stack ~= LRState(goto_data[b], reduce_line, reduce_column);
@@ -30616,7 +30617,7 @@ class MainGrammar : public GLRParser
                             writefln("%sgoto %d", indent, stack.top.index);
                         }
                         else
-                            assert(0);
+                            assert(0, __FILE__~"("~.toString(__LINE__)~")");
                     }
                     else
                         stack ~= LRState(goto_data[b], reduce_line, reduce_column);
@@ -32607,10 +32608,10 @@ class MainGrammar : public GLRParser
                     symbol = 0;
                     break;
                 default:
-                    assert(0);
+                    assert(0, __FILE__~"("~.toString(__LINE__)~")");
             }
         }
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 
@@ -32749,7 +32750,7 @@ class WhitespaceGrammar : public GLRParser
                     stack ~= LRState(goto_data[b], reduce_line, reduce_column);
                 }
                 else
-                    assert(0);
+                    assert(0, __FILE__~"("~.toString(__LINE__)~")");
             }
             else
                 stack ~= LRState(goto_data[b], reduce_line, reduce_column);
@@ -32847,7 +32848,7 @@ class WhitespaceGrammar : public GLRParser
                             stack ~= LRState(goto_data[b], reduce_line, reduce_column);
                         }
                         else
-                            assert(0);
+                            assert(0, __FILE__~"("~.toString(__LINE__)~")");
                     }
                     else
                         stack ~= LRState(goto_data[b], reduce_line, reduce_column);
@@ -32891,10 +32892,10 @@ class WhitespaceGrammar : public GLRParser
                     input = prev_input;
                     return true;
                 default:
-                    assert(0);
+                    assert(0, __FILE__~"("~.toString(__LINE__)~")");
             }
         }
-        assert(0);
+        assert(0, __FILE__~"("~.toString(__LINE__)~")");
     }
 }
 

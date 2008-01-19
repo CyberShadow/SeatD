@@ -47,13 +47,6 @@ public:
     string[] getIncludePaths();
 
     /**********************************************************************************************
-        Access the active file's content.
-        Since it might have been modified by the host and not saved to disk, yet,
-        we need to be read it directly form host memory.
-    **********************************************************************************************/
-    string getBufferText();
-
-    /**********************************************************************************************
         Determine whether the current buffer is to be parsed.
         Usually done using the file extension or editor settings.
     **********************************************************************************************/
@@ -106,9 +99,9 @@ public:
     /***********************************************************************************************
 
     ***********************************************************************************************/
-    string[] listDeclarations()
+    string[] listDeclarations(string text)
     {
-        auto modinfo = parseBuffer;
+        auto modinfo = parseBuffer(text);
 
         string[] list;
         if ( modinfo !is null )
@@ -130,9 +123,9 @@ public:
     /***********************************************************************************************
 
     ***********************************************************************************************/
-    string[] listModules()
+    string[] listModules(string text)
     {
-        auto modinfo = parseBuffer;
+        auto modinfo = parseBuffer(text);
 
         string[] list;
         list_modules_ = null;
@@ -157,9 +150,9 @@ public:
     /***********************************************************************************************
 
     ***********************************************************************************************/
-    void gotoDeclarationAtCursor()
+    void gotoDeclarationAtCursor(string text)
     {
-        auto bufferinfo = parseBuffer(false);
+        auto bufferinfo = parseBuffer(text, false);
 
         auto modinfo = bufferinfo;
         Declaration decl = root_package_.findDeclaration(fqIdentAtCursor, modinfo);
@@ -271,10 +264,8 @@ public:
     /**********************************************************************************************
         Parses the active buffer and checks whether it's imports need to be parsed.
     **********************************************************************************************/
-    ModuleData parseBuffer(bool warn_non_d_file=true)
+    ModuleData parseBuffer(string text, bool warn_non_d_file=true)
     {
-        string text = getBufferText();
-
         if ( !isParsableBuffer )
         {
             if ( warn_non_d_file )
