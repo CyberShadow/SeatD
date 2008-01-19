@@ -54,8 +54,8 @@ public:
 
 public slots:
     void viewChanged();
-    void listModules(bool focus_search=true);
-    void listDeclarations(bool focus_search=true);
+    void listModules(bool manual_invoke=true);
+    void listDeclarations(bool manual_invoke=true);
     void gotoSymbol(QListViewItem *);
     void searchSubmit();
     void gotoDeclaration();
@@ -66,6 +66,7 @@ private:
     KListView*          listview_;
     QVBoxLayout*        vboxLayout_;
     SeatdSearchLine*    search_input_;
+    bool                hide_doc_on_defocus_;
 
     bool    tree_list_;
 

@@ -138,7 +138,7 @@ void KatePluginSeatd::getDocumentVariable(const char* name, const char** str, si
 
 //=================================================================================================
 KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w)
-    : seatd_(seatd), win(w), list_type_(none), tree_list_(false)
+    : seatd_(seatd), win(w), list_type_(none), tree_list_(false), hide_doc_on_defocus_(false)
 {
     new KAction(
         i18n("List Modules"), 0, this,
@@ -237,6 +237,10 @@ void KatePluginSeatdView::toggleSearchFocus()
 {
     if ( search_input_->hasFocus() )
     {
+        if ( hide_doc_on_defocus_ ) {
+            hide_doc_on_defocus_ = false;
+            win->toolViewManager()->hideToolView(dock_);
+        }
         Kate::View* view = win->viewManager()->activeView();
         if ( view )
             view->setFocus();
@@ -266,7 +270,7 @@ void KatePluginSeatdView::gotoDeclaration()
 }
 
 //=================================================================================================
-void KatePluginSeatdView::listModules(bool focus_search)
+void KatePluginSeatdView::listModules(bool manual_invoke)
 {
     Kate::View* view = win->viewManager()->activeView();
     if ( !view )
@@ -286,12 +290,18 @@ void KatePluginSeatdView::listModules(bool focus_search)
 
     list_type_ = modules;
 
-    if ( focus_search )
+    if ( manual_invoke )
+    {
+        if ( !dock_->isVisible() ) {
+            hide_doc_on_defocus_ = true;
+            win->toolViewManager()->showToolView(dock_);
+        }
         toggleSearchFocus();
+    }
 }
 
 //=================================================================================================
-void KatePluginSeatdView::listDeclarations(bool focus_search)
+void KatePluginSeatdView::listDeclarations(bool manual_invoke)
 {
     Kate::View* view = win->viewManager()->activeView();
     if ( !view )
@@ -311,8 +321,14 @@ void KatePluginSeatdView::listDeclarations(bool focus_search)
 
     list_type_ = decls;
 
-    if ( focus_search )
+    if ( manual_invoke )
+    {
+        if ( !dock_->isVisible() ) {
+            hide_doc_on_defocus_ = true;
+            win->toolViewManager()->showToolView(dock_);
+        }
         toggleSearchFocus();
+    }
 }
 
 //=================================================================================================
@@ -390,6 +406,12 @@ void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
         default:
             break;
     }
+
+    if ( hide_doc_on_defocus_ ) {
+        hide_doc_on_defocus_ = false;
+        win->toolViewManager()->hideToolView(dock_);
+    }
+    
     Kate::View* view = win->viewManager()->activeView();
     if ( view )
         view->setFocus();
