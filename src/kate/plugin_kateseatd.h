@@ -17,6 +17,25 @@
 /**************************************************************************************************
 
 **************************************************************************************************/
+class SeatdSearchLine : public KListViewSearchLine
+{
+    Q_OBJECT
+
+public:
+    SeatdSearchLine(QWidget* parent, Kate::MainWindow* w) : KListViewSearchLine(parent), win(w) {}
+        
+protected slots:
+    void activateSearch();
+
+protected:
+    Kate::MainWindow*   win;
+
+    void keyPressEvent(QKeyEvent* e);
+};
+
+/**************************************************************************************************
+
+**************************************************************************************************/
 class KatePluginSeatdView : public QObject, public KXMLGUIClient
 {
     Q_OBJECT
@@ -27,7 +46,6 @@ public:
     KatePluginSeatdView(void* seatd, Kate::MainWindow *w);
     virtual ~KatePluginSeatdView();
 
-    void getBufferText(const char** text, size_t* length);
     void showSelectionList(const char** entries, size_t count);
     void toggleSearchFocus();
 
@@ -38,13 +56,14 @@ public slots:
     void gotoSymbol(QListViewItem *);
     void searchChanged(const QString&);
     void searchSubmit();
+    void updateSelection();
 
 private:
-    QWidget*                dock_;
-    QWidget*                widget_;
-    KListView*              listview_;
-    QVBoxLayout*            vboxLayout_;
-    KListViewSearchLine*    search_input_;
+    QWidget*            dock_;
+    QWidget*            widget_;
+    KListView*          listview_;
+    QVBoxLayout*        vboxLayout_;
+    SeatdSearchLine*    search_input_;
 
     enum ListType {
         none,
@@ -71,7 +90,6 @@ public:
     void addView (Kate::MainWindow *win);
     void removeView (Kate::MainWindow *win);
 
-    void getBufferText(const char** text, size_t* length);
     void showSelectionList(const char** entries, size_t count);
     void showCallTip(const char** entries, size_t count);
     void getCursor(unsigned int* line, unsigned int* col);
@@ -97,8 +115,9 @@ extern "C"
     void seatdGotoModule(void* plugin, const char* text, size_t len);
     void seatdOnChar(void* plugin, char c);
     void seatdSetBufferFile(void* inst, const char* filepath, size_t len);
-    void seatdListDeclarations(void* inst, const char*** entries, size_t* count);
-    void seatdListModules(void* inst, const char*** entries, size_t* count);
+    void seatdListDeclarations(void* inst, const char* text, size_t len, const char*** entries, size_t* count);
+    void seatdListModules(void* inst, const char* text, size_t len, const char*** entries, size_t* count);
+    void seatdFreeList(const char** entries);
 }
 
 static const char* const class_xpm[] = {

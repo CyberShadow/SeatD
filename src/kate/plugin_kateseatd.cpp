@@ -5,6 +5,7 @@
 #include <klocale.h>
 #include <kgenericfactory.h>
 #include <kurl.h>
+#include <qheader.h>
 
 #include <qmessagebox.h>
 
@@ -29,18 +30,6 @@ KatePluginSeatd::KatePluginSeatd(QObject* parent, const char* name, const QStrin
 //=================================================================================================
 KatePluginSeatd::~KatePluginSeatd()
 {
-}
-
-//=================================================================================================
-extern "C" void kateGetBufferText(void* plugin, const char** text, size_t* length)
-{
-    ((KatePluginSeatd*)plugin)->getBufferText(text, length);
-}
-
-//=================================================================================================
-void KatePluginSeatd::getBufferText(const char** text, size_t* length)
-{
-    views_.at(0)->getBufferText(text, length);
 }
 
 //=================================================================================================
@@ -133,6 +122,12 @@ extern "C" void kateGetDocumentVariable(void* plugin, const char* name, const ch
 }
 
 //=================================================================================================
+extern "C" void kateFreeString(const char* str)
+{
+    delete str;
+}
+
+//=================================================================================================
 void KatePluginSeatd::getDocumentVariable(const char* name, const char** str, size_t* len)
 {
     Kate::DocumentManager* dm = application()->documentManager();
@@ -152,7 +147,6 @@ void KatePluginSeatd::getDocumentVariable(const char* name, const char** str, si
         }
     }
     
-    // TODO: free that memory
     char* buf = new char[concat_val.length()];
     memcpy(buf, (const char*)concat_val, concat_val.length());
     *str = buf;
@@ -181,7 +175,7 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
     dock_ = win->toolViewManager()->createToolView("kate_plugin_seatd", Kate::ToolViewManager::Left, QPixmap((const char**)class_xpm), i18n("SEATD Lists"));
     widget_ = new QWidget(dock_);
     vboxLayout_ = new QVBoxLayout(widget_);
-    search_input_ = new KListViewSearchLine(widget_);
+    search_input_ = new SeatdSearchLine(widget_, win);
     listview_ = new KListView(widget_);
     search_input_->setListView(listview_);
     vboxLayout_->addWidget(search_input_);
@@ -194,6 +188,7 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
     listview_->setRootIsDecorated(0);
     listview_->setTreeStepSize(10);
     listview_->setShowToolTips(TRUE);
+    listview_->header()->hide();
 
     connect(search_input_, SIGNAL(returnPressed()), this, SLOT(searchSubmit()));
     connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
@@ -262,14 +257,22 @@ void KatePluginSeatdView::toggleSearchFocus()
 //=================================================================================================
 void KatePluginSeatdView::listModules(bool focus_search)
 {
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+
     const char**    entries;
     size_t          count;
-    seatdListModules(seatd_, &entries, &count);
+    seatdListModules(seatd_, (const char*)doc->text(), doc->text().length(), &entries, &count);
 
     listview_->clear();
     search_input_->clear();
     for ( int i = 0; i < count; ++i )
         new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+    seatdFreeList(entries);
 
     list_type_ = modules;
 
@@ -280,24 +283,6 @@ void KatePluginSeatdView::listModules(bool focus_search)
 //=================================================================================================
 void KatePluginSeatdView::listDeclarations(bool focus_search)
 {
-    const char**    entries;
-    size_t          count;
-    seatdListDeclarations(seatd_, &entries, &count);
-
-    listview_->clear();
-    search_input_->clear();
-    for ( int i = 0; i < count; ++i )
-        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
-
-    list_type_ = decls;
-
-    if ( focus_search )
-        toggleSearchFocus();
-}
-
-//=================================================================================================
-void KatePluginSeatdView::getBufferText(const char** text, size_t* length)
-{
     Kate::View* view = win->viewManager()->activeView();
     if ( !view )
         return;
@@ -305,12 +290,20 @@ void KatePluginSeatdView::getBufferText(const char** text, size_t* length)
     if ( !doc )
         return;
 
-    // TODO: free that memory
-    QString data = doc->text();
-    char* buf = new char[data.length()];
-    memcpy(buf, (const char*)data, data.length());
-    *text = buf;
-    *length = data.length();
+    const char**    entries;
+    size_t          count;
+    seatdListDeclarations(seatd_, (const char*)doc->text(), doc->text().length(), &entries, &count);
+
+    listview_->clear();
+    search_input_->clear();
+    for ( int i = 0; i < count; ++i )
+        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+    seatdFreeList(entries);
+
+    list_type_ = decls;
+
+    if ( focus_search )
+        toggleSearchFocus();
 }
 
 //=================================================================================================
@@ -330,4 +323,68 @@ void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
     Kate::View* view = win->viewManager()->activeView();
     if ( view )
         view->setFocus();
+}
+
+//=================================================================================================
+void SeatdSearchLine::activateSearch()
+{
+    KListViewSearchLine::activateSearch();
+    
+    const int iend = listView()->childCount()-1;
+    for ( int i = 0; i < iend; ++i )
+    {
+        QListViewItem* item = listView()->itemAtIndex(i);
+        if ( item->isVisible() ) {
+            listView()->setSelected(item, true);
+            break;
+        }
+    }
+}
+
+//=================================================================================================
+void SeatdSearchLine::keyPressEvent(QKeyEvent* e)
+{
+    switch ( e->key() )
+    {
+        case Qt::Key_Down:
+            {
+                const int iend = listView()->childCount();
+                for ( int j = 0, i = 0; i < iend; ++i )
+                {
+                    QListViewItem* item = listView()->itemAtIndex(i);
+                    if ( item->isVisible() )
+                    {
+                        if ( j <= 0 ) {
+                            ++j;
+                            continue;
+                        }
+                        listView()->setSelected(item, true);
+                        break;
+                    }
+                }
+                listView()->setFocus();
+            }
+            break;
+        case Qt::Key_Up:
+            for ( int i = listView()->childCount()-1; i >= 0; --i )
+            {
+                QListViewItem* item = listView()->itemAtIndex(i);
+                if ( item->isVisible() ) {
+                    listView()->setSelected(item, true);
+                    break;
+                }
+            }
+            listView()->setFocus();
+            break;
+        case Qt::Key_Escape:
+            {
+                Kate::View* view = win->viewManager()->activeView();
+                if ( view )
+                    view->setFocus();
+            }
+            break;
+        default:
+            KListViewSearchLine::keyPressEvent(e);
+            break;
+    }
 }

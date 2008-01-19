@@ -2,7 +2,6 @@
  *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
-// kate: SEATDIncludePath /usr/include/d/4.1
 module kate.seatd_kate;
 
 import abstract_plugin;
@@ -34,12 +33,6 @@ public:
     {
         if ( instance_ is null )
             instance_ = new SeatdKate;
-        int new_decl;
-        try {
-            int hidden_decl;
-        
-        }
-        catch ( Exception e ) {}
         return instance_;
     }
     
@@ -51,7 +44,9 @@ public:
         char* ptr;
         size_t len;
         kateGetDocumentVariable(kate_instance_, "SEATDIncludePath", &ptr, &len);
-        return split(ptr[0 .. len], ",");
+        auto paths = split(ptr[0 .. len].dup, ",");
+        kateFreeString(ptr);
+        return paths;
     }
 
     /**********************************************************************************************
@@ -106,17 +101,6 @@ public:
     }
 
     /**********************************************************************************************
-        Access the current buffer's text data.
-    **********************************************************************************************/
-    string getBufferText()
-    {
-        char*   buf;
-        size_t  len;
-        kateGetBufferText(kate_instance_, &buf, &len);
-        return buf[0 .. len];
-    }
-
-    /**********************************************************************************************
         Determine whether the current buffer is to be parsed.
         Usually done using the file extension or editor settings.
     **********************************************************************************************/
@@ -135,12 +119,12 @@ protected:
     }
 }
 
-extern(C) void kateGetBufferText(void* plugin, char** text, size_t* length);
 extern(C) void kateShowCallTip(void* plugin, char** entries, size_t count);
 extern(C) void kateSetCursor(void* plugin, uint line, uint col);
 extern(C) void kateGetCursor(void* plugin, uint* line, uint* col);
 extern(C) void kateOpenFile(void* plugin, char* filepath);
 extern(C) void kateGetDocumentVariable(void* plugin, char* name, char** str, size_t* len);
+extern(C) void kateFreeString(char* str);
 
 extern(C) bool rt_init( void delegate(Exception e) dg = null );
 extern(C) bool rt_term( void delegate(Exception e) dg = null );
@@ -169,22 +153,23 @@ void* seatdGetInstance(void* kate_instance)
     return cast(void*)sk;
 }
 
-void seatdListModules(void* inst, char*** entries, size_t* count)
+void seatdListModules(void* inst, char* text, size_t len, char*** entries, size_t* count)
 {
+    auto dtext = text[0 .. len];
     debug
     {
-        auto list = (cast(SeatdKate)inst).listModules();
+        auto list = (cast(SeatdKate)inst).listModules(dtext);
         *count = list.length;
         auto clist = new char*[list.length];
         foreach ( i, e; list )
             clist[i] = (e~\0).ptr;
         *entries = clist.ptr;
-   }
+    }
     else
     {
         try
         {
-            auto list = (cast(SeatdKate)inst).listModules();
+            auto list = (cast(SeatdKate)inst).listModules(dtext);
             *count = list.length;
             auto clist = new char*[list.length];
             foreach ( i, e; list )
@@ -192,15 +177,23 @@ void seatdListModules(void* inst, char*** entries, size_t* count)
             *entries = clist.ptr;
         }
         catch ( Exception e ) {
+            *count = 0;
+            *entries = null;
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
         }
     }
 }
 
-void seatdListDeclarations(void* inst, char*** entries, size_t* count)
+void seatdFreeList(char** entries)
 {
+    delete entries;
+}
+
+void seatdListDeclarations(void* inst, char* text, size_t len, char*** entries, size_t* count)
+{
+    auto dtext = text[0 .. len];
     debug {
-        auto list = (cast(SeatdKate)inst).listDeclarations();
+        auto list = (cast(SeatdKate)inst).listDeclarations(dtext);
         *count = list.length;
         auto clist = new char*[list.length];
         foreach ( i, e; list )
@@ -210,7 +203,7 @@ void seatdListDeclarations(void* inst, char*** entries, size_t* count)
     else
     {
         try {
-            auto list = (cast(SeatdKate)inst).listDeclarations();
+            auto list = (cast(SeatdKate)inst).listDeclarations(dtext);
             *count = list.length;
             auto clist = new char*[list.length];
             foreach ( i, e; list )
@@ -218,6 +211,8 @@ void seatdListDeclarations(void* inst, char*** entries, size_t* count)
             *entries = clist.ptr;
         }
         catch ( Exception e ) {
+            *count = 0;
+            *entries = null;
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
         }
     }

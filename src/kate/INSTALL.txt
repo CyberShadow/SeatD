@@ -1,11 +1,21 @@
-Prerequisites:
+=====================================================================
+SEATD for Kate
+=====================================================================
+
+-------------------------------------------------------------------------------
+Prerequisites
+-------------------------------------------------------------------------------
+
 - Kate 3.5 (newer version might also work)
 - KDE3 devel package including tools (moc is needed) (KDE4 might also work)
 - GDC
 - Tango 0.99.4 sources
 - Rebuild (from DSSS package)
 
-Step 1 - build the Tango runtime with Position Independent Code (PIC), s.t. it can be used in a dynamically loaded library (or shared object)
+-------------------------------------------------------------------------------
+Step 1  Build the Tango runtime with Position Independent Code (PIC),
+        s.t. it can be used in a dynamically loaded library (or shared object)
+-------------------------------------------------------------------------------
 
 - Get the patch http://dsource.org/projects/tango/attachment/ticket/857/tango-0.99.4_dynload2.patch?format=raw
 - apply it in the tango base directory:
@@ -20,7 +30,9 @@ export CFLAGS=-fPIC
 
 - the last 2 commands require root privileges
 
-Step 2 - build the plugin
+-------------------------------------------------------------------------------
+Step 2  Build the plugin
+-------------------------------------------------------------------------------
 
 - checkout SEATD
 svn co https://svn.mainia.de/svn/SEATD/trunk
@@ -39,3 +51,14 @@ Trouble shooting
         test_loader .libs/kateseatdplugin.so
     - try to fix the error you get
 
+-------------------------------------------------------------------------------
+Step 3  Install the plugin
+-------------------------------------------------------------------------------
+- Kate plugins consist of 4 files. In order to install a plugin, they need to be copied to the proper folders in the KDE file hierarchy. That hierarchy exists globally and in each user directory.
+- To install SEATD for Kate globally, you'll need root privileges.
+- In the following $BASE stands for /usr/ or ~/.kde/ - depending on whether you want to install globally or for the current user only.
+
+.libs/kateseatdplugin.so    -> $BASE/lib/kde3/
+kateseatdplugin.la          -> $BASE/lib/kde3/  
+ui.rc                       -> $BASE/share/apps/kate/plugins/kateseatd/
+kateseatd.desktop           -> $BASE/share/services
