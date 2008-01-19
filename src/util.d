@@ -152,30 +152,21 @@ ModuleData parse(string filepath_str, string input, bool detailed=false, bool re
     if ( filepath.exists )
     {
 //        getTimes(filepath, ctime, atime, mtime);
-        path = getFullPath(filepath_str);
-        filepath = new FilePath(path);
-        filename = filepath.name;
+        filepath = new FilePath(getFullPath(filepath_str));
     }
 /+  else
         mtime = std.date.getUTCtime;
  +/
-    modinfo = new ModuleData(path, filename, mtime);
+    modinfo = new ModuleData(filepath, mtime);
     bool has_module_decl;
     root.Module(modinfo, has_module_decl);
-    if ( !has_module_decl )
-    {
-        auto dot_pos = locatePrior(filename, '.');
-        if ( dot_pos < 0 )
-            dot_pos = filename.length;
-        auto decl = new Declaration(null, Declaration.Type.dtModule, 0, filename[0 .. dot_pos], 1, 1);
+    if ( !has_module_decl ) {
+        auto decl = new Declaration(null, Declaration.Type.dtModule, 0, filepath.name, 1, 1);
         modinfo.decls.insert(decl);
     }
 
     if ( modinfo.fqname is null )
-    {
-        auto pos = locatePrior(filename, '.');
-        modinfo.fqname = filename[0 .. pos];
-    }
+        modinfo.fqname = filepath.name;
     
     return modinfo;
 }

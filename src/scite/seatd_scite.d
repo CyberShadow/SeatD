@@ -33,16 +33,23 @@ class SeatdScite : public AbstractPlugin, public Extension
     }
     
     /**********************************************************************************************
-        Access key-value pair from the configuration
+        Get a list of include paths that have been set by the user in some configuration facility.
     **********************************************************************************************/
-    string configProperty(string name)
+    string[] getIncludePaths()
     {
-        auto str = host.Property((name~\0).ptr);
-        if ( str is null )
-            return null;
-        string str2 = str[0 .. strlen(str)].dup;
-        delete str;
-        return str2;
+        auto    global_ip_c = host.Property("seatd.global.include"),
+                local_ip_c = host.Property("seatd.local.include"),
+                dir_home_c = host.Property("SciteDirectoryHome");
+        auto    global_ip = global_ip_c[0 .. strlen(global_ip_c)],
+                local_ip = local_ip_c[0 .. strlen(local_ip_c)],
+                dir_home = dir_home_c[0 .. strlen(dir_home_c)];
+
+        if ( dir_home.length > 0 && contains("/\\", dir_home[$-1]) )
+            dir_home ~= FileConst.PathSeparatorChar;
+
+        auto paths = split(local_ip, ";");
+        paths ~= split(global_ip, ";");
+        return paths;
     }
 
     /**********************************************************************************************

@@ -42,9 +42,9 @@ public:
     // Interface to the host, needs to be overridden in host specific subclass.
 
     /**********************************************************************************************
-        Access key-value pair from the configuration
+        Get a list of include paths that have been set by the user in some configuration facility.
     **********************************************************************************************/
-    string configProperty(string name);
+    string[] getIncludePaths();
 
     /**********************************************************************************************
         Access the active file's content.
@@ -241,15 +241,22 @@ public:
         if ( modinfo is null )
             return;
 
-        string path;
-        foreach ( c; modinfo.path )
+        string fname;
+        if ( modinfo.filepath is null )
         {
-            if ( c == '\\' )
-                path ~= '/';
-            else
-                path ~= c;
+            auto include_paths = bufferIncludePath(modinfo.fqname);
+            fname = findModuleFile(include_paths, modinfo.fqname, &this.log);
+            if ( fname is null ) {
+                auto ipstr = join(include_paths, ",");
+                Layout!(char) l;
+                log(l.convert("Unable to find module {} in include path {}".dup, modinfo.fqname, ipstr));
+                return;
+            }
         }
-        openFile(path);
+        else
+            fname = modinfo.filepath.toString;
+
+        openFile(fname);
     }
 
     void gotoModule(string text)
@@ -295,7 +302,8 @@ public:
 
             auto fname = findModuleFile(include_paths, imp.module_name, &this.log);
             if ( fname is null ) {
-                log(l.convert("Unable to find module {} in include path".dup, imp.module_name));
+                auto ipstr = join(include_paths, ",");
+                log(l.convert("Unable to find module {} in include path {}".dup, imp.module_name, ipstr));
                 root_package_ ~= new ModuleData(imp.module_name);
                 continue;
             }
@@ -379,26 +387,15 @@ public:
         if ( ip !is null )
             return *ip;
 
-        auto    global_ip = configProperty("seatd.global.include"),
-                local_ip = configProperty("seatd.local.include"),
-                dir_home = configProperty("SciteDirectoryHome");
+        auto paths = getIncludePaths();
+        paths ~= determineIncludePath(active_filepath_, module_name);
 
-        if ( dir_home.length > 0 && contains("/\\", dir_home[$-1]) )
-            dir_home ~= FileConst.PathSeparatorChar;
-
-        auto paths = split(local_ip, ";");
-        if ( paths.length == 0 )
-            paths = determineIncludePath(active_filepath_, module_name);
-        paths ~= split(global_ip, ";");
-        
         foreach ( ref p; paths )
         {
             if ( p.length <= 0 )
                 continue;
             if ( contains("/\\", p[$-1]) )
                 p ~= FileConst.PathSeparatorChar;
-            if ( contains("/\\", p[0]) && (p.length < 2 || p[1] != ':') )
-                p = dir_home~p;
         }
 
 //        parseIncludePath(paths);

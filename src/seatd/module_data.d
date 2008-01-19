@@ -491,9 +491,8 @@ class Import
 **************************************************************************************************/
 class ModuleData
 {
-    string      fqname,
-                path,
-                file_name;
+    FilePath    filepath;
+    string      fqname;
     long        modified_time;
     Import[]    imports;
     DeclAVL     decls;
@@ -504,10 +503,9 @@ class ModuleData
         decls = new DeclAVL;
     }
 
-    this(string fp, string fn, long mod)
+    this(FilePath fp, long mod)
     {
-        path = fp;
-        file_name = fn;
+        filepath = fp;
         modified_time = mod;
         decls = new DeclAVL;
     }
