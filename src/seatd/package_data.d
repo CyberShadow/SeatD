@@ -5,6 +5,7 @@
 module seatd.package_data;
 
 import tango.text.Util;
+import tango.io.Stdout;
 
 import seatd.module_data;
 import container;
@@ -116,8 +117,8 @@ class PackageData
         string ident, ref ModuleData scope_mod, Declaration scope_decl=null, bool no_imports=false
     )
     {
-        assert(ident !is null);
-
+        if ( ident is null )
+            return null;
         if ( ident[0] == '.' )
             scope_decl = null;
         else

@@ -5,6 +5,7 @@
         <Separator />
         <Action name="view_list_modules" />
         <Action name="view_list_declarations" />
+        <Action name="view_goto_declaration" />
     </Menu>
 </MenuBar>
 </kpartplugin>

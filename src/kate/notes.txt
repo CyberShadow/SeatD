@@ -1,6 +1,5 @@
+- make tree-view configurable
 - open sidebar on shortcut, close again on defocus, if it was closed before
-- use treelist
-- kate-modlines are not optimal for include paths, because the file has to be opened in kate
-
-- add open file list to live search (jump to build.sh etc.)
+- kate-modelines are not optimal for include paths, because the file has to be opened in kate
+- add open file list to live search (jump to build.sh etc.) (integrate document list into S4K?)
 - add KatePart extension from within Kate plugin? add missing editing functions

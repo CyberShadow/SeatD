@@ -23,6 +23,7 @@ class SeatdSearchLine : public KListViewSearchLine
 
 public:
     SeatdSearchLine(QWidget* parent, Kate::MainWindow* w) : KListViewSearchLine(parent), win(w) {}
+    void selectFirstVisible(QListViewItem* item = 0);
         
 protected slots:
     void activateSearch();
@@ -48,15 +49,16 @@ public:
 
     void showSelectionList(const char** entries, size_t count);
     void toggleSearchFocus();
+    void populateList(const char** entries, size_t count);
+    QString getItemFQN(QListViewItem* item);
 
 public slots:
     void viewChanged();
     void listModules(bool focus_search=true);
     void listDeclarations(bool focus_search=true);
     void gotoSymbol(QListViewItem *);
-    void searchChanged(const QString&);
     void searchSubmit();
-    void updateSelection();
+    void gotoDeclaration();
 
 private:
     QWidget*            dock_;
@@ -64,6 +66,8 @@ private:
     KListView*          listview_;
     QVBoxLayout*        vboxLayout_;
     SeatdSearchLine*    search_input_;
+
+    bool    tree_list_;
 
     enum ListType {
         none,
@@ -91,7 +95,6 @@ public:
     void removeView (Kate::MainWindow *win);
 
     void showSelectionList(const char** entries, size_t count);
-    void showCallTip(const char** entries, size_t count);
     void getCursor(unsigned int* line, unsigned int* col);
     void setCursor(unsigned int line, unsigned int col);
     void openFile(const char* filepath);
@@ -111,6 +114,7 @@ private:
 extern "C"
 {
     void* seatdGetInstance(void*);
+    bool seatdGotoSymbol(void* plugin, const char*, size_t, const char*, size_t);
     void seatdGotoDeclaration(void* plugin, const char* text, size_t len);
     void seatdGotoModule(void* plugin, const char* text, size_t len);
     void seatdOnChar(void* plugin, char c);

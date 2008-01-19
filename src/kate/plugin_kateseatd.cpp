@@ -55,23 +55,6 @@ void KatePluginSeatd::removeView(Kate::MainWindow *win)
 }
 
 //=================================================================================================
-extern "C" void kateShowCallTip(void* plugin, const char** entries, size_t count)
-{
-    ((KatePluginSeatd*)plugin)->showCallTip(entries, count);
-}
-
-//=================================================================================================
-void KatePluginSeatd::showCallTip(const char** entries, size_t count)
-{
-    Kate::View *kv = application()->activeMainWindow()->viewManager()->activeView();
-
-    QStringList functionList;
-    for ( int i = 0; i < count; ++i )
-        functionList.push_back(entries[i]);
-    kv->showArgHint(functionList, "wrapping", "delimiter");
-}
-
-//=================================================================================================
 extern "C" void kateSetCursor(void* plugin, unsigned int line, unsigned int col)
 {
     ((KatePluginSeatd*)plugin)->setCursor(line, col);
@@ -154,7 +137,8 @@ void KatePluginSeatd::getDocumentVariable(const char* name, const char** str, si
 }
 
 //=================================================================================================
-KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : seatd_(seatd), win(w), list_type_(none)
+KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w)
+    : seatd_(seatd), win(w), list_type_(none), tree_list_(false)
 {
     new KAction(
         i18n("List Modules"), 0, this,
@@ -166,6 +150,12 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
         i18n("List Declarations"), 0, this,
         SLOT( listDeclarations() ), actionCollection(),
         "view_list_declarations"
+    );
+             
+    new KAction(
+        i18n("Goto Declaration"), 0, this,
+        SLOT( gotoDeclaration() ), actionCollection(),
+        "view_goto_declaration"
     );
 
     setInstance(new KInstance("kate"));
@@ -189,6 +179,7 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
     listview_->setTreeStepSize(10);
     listview_->setShowToolTips(TRUE);
     listview_->header()->hide();
+    listview_->setSorting(0);
 
     connect(search_input_, SIGNAL(returnPressed()), this, SLOT(searchSubmit()));
     connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
@@ -255,6 +246,26 @@ void KatePluginSeatdView::toggleSearchFocus()
 }
 
 //=================================================================================================
+void KatePluginSeatdView::gotoDeclaration()
+{
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+
+    bool found = seatdGotoSymbol(
+        seatd_, (const char*)doc->text(), doc->text().length(),
+        view->currentWord(), view->currentWord().length()
+    );
+    if ( !found ) {
+        QStringList entries("Symbol not found");
+        view->showArgHint(entries, "", "");
+    }
+}
+
+//=================================================================================================
 void KatePluginSeatdView::listModules(bool focus_search)
 {
     Kate::View* view = win->viewManager()->activeView();
@@ -268,11 +279,10 @@ void KatePluginSeatdView::listModules(bool focus_search)
     size_t          count;
     seatdListModules(seatd_, (const char*)doc->text(), doc->text().length(), &entries, &count);
 
-    listview_->clear();
-    search_input_->clear();
-    for ( int i = 0; i < count; ++i )
-        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
-    seatdFreeList(entries);
+    populateList(entries, count);
+    search_input_->updateSearch();
+    search_input_->selectAll();
+    search_input_->selectFirstVisible();
 
     list_type_ = modules;
 
@@ -294,11 +304,10 @@ void KatePluginSeatdView::listDeclarations(bool focus_search)
     size_t          count;
     seatdListDeclarations(seatd_, (const char*)doc->text(), doc->text().length(), &entries, &count);
 
-    listview_->clear();
-    search_input_->clear();
-    for ( int i = 0; i < count; ++i )
-        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
-    seatdFreeList(entries);
+    populateList(entries, count);
+    search_input_->updateSearch();
+    search_input_->selectAll();
+    search_input_->selectFirstVisible();
 
     list_type_ = decls;
 
@@ -307,15 +316,76 @@ void KatePluginSeatdView::listDeclarations(bool focus_search)
 }
 
 //=================================================================================================
+void KatePluginSeatdView::populateList(const char** entries, size_t count)
+{
+    listview_->clear();
+    if ( tree_list_ )
+    {
+        for ( int i = 0; i < count; ++i )
+        {
+            QStringList nodes = QStringList::split('.', entries[i]);
+            
+            QListViewItem* parent = 0;
+            QListViewItem* n;
+
+            const int jend = nodes.size();
+            for ( int j = 0; j < jend; ++j, parent = n )
+            {
+                n = listview_->findItem(nodes[j], 0);
+                if ( !n )
+                {
+                    if ( !parent ) {
+                        parent = new QListViewItem(listview_, nodes[j++]);
+                        parent->setOpen(true);
+                    }
+                    for ( ; j < jend; ++j ) {
+                        parent = new QListViewItem(parent, nodes[j]);
+                        parent->setOpen(true);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        for ( int i = 0; i < count; ++i ) {
+            new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+        }
+    }
+    seatdFreeList(entries);
+}
+
+//=================================================================================================
+QString KatePluginSeatdView::getItemFQN(QListViewItem* item)
+{
+    QString name = item->text(0);
+    
+    if ( tree_list_ )
+    {
+        for ( item = item->parent(); item; item = item->parent() )
+            name = item->text(0)+"."+name;
+    }
+    
+    return name;
+}
+
+//=================================================================================================
 void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
 {
     switch ( list_type_ )
     {
         case decls:
-            seatdGotoDeclaration(seatd_, item->text(0), item->text(0).length());
+            {
+                QString name = getItemFQN(item);
+                seatdGotoDeclaration(seatd_, name, name.length());
+            }
             break;
         case modules:
-            seatdGotoModule(seatd_, item->text(0), item->text(0).length());
+            {
+                QString name = getItemFQN(item);
+                seatdGotoModule(seatd_, name, name.length());
+            }
             break;
         default:
             break;
@@ -329,11 +399,17 @@ void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
 void SeatdSearchLine::activateSearch()
 {
     KListViewSearchLine::activateSearch();
-    
-    const int iend = listView()->childCount()-1;
-    for ( int i = 0; i < iend; ++i )
+    selectFirstVisible(listView()->selectedItem());
+}
+
+//=================================================================================================
+void SeatdSearchLine::selectFirstVisible(QListViewItem* item)
+{
+    if ( !item )
+        item = listView()->firstChild();
+        
+    for ( ; item; item = item->itemBelow() )
     {
-        QListViewItem* item = listView()->itemAtIndex(i);
         if ( item->isVisible() ) {
             listView()->setSelected(item, true);
             break;
@@ -348,16 +424,17 @@ void SeatdSearchLine::keyPressEvent(QKeyEvent* e)
     {
         case Qt::Key_Down:
             {
-                const int iend = listView()->childCount();
-                for ( int j = 0, i = 0; i < iend; ++i )
+                QListViewItem* item = listView()->selectedItem();
+                if ( item )
+                    item = item->itemBelow();
+                if ( !item )
+                    item = listView()->firstChild();
+                if ( item && item->isVisible() )
+                    listView()->setSelected(item, true);
+                
+                for ( ; item; item = item->itemBelow() )
                 {
-                    QListViewItem* item = listView()->itemAtIndex(i);
-                    if ( item->isVisible() )
-                    {
-                        if ( j <= 0 ) {
-                            ++j;
-                            continue;
-                        }
+                    if ( item->isVisible() ) {
                         listView()->setSelected(item, true);
                         break;
                     }
@@ -366,15 +443,24 @@ void SeatdSearchLine::keyPressEvent(QKeyEvent* e)
             }
             break;
         case Qt::Key_Up:
-            for ( int i = listView()->childCount()-1; i >= 0; --i )
             {
-                QListViewItem* item = listView()->itemAtIndex(i);
-                if ( item->isVisible() ) {
+                QListViewItem* item = listView()->selectedItem();
+                if ( item )
+                    item = item->itemAbove();
+                if ( !item )
+                    item = listView()->lastItem();
+                if ( item && item->isVisible() )
                     listView()->setSelected(item, true);
-                    break;
+
+                for ( ; item; item = item->itemAbove() )
+                {
+                    if ( item->isVisible() ) {
+                        listView()->setSelected(item, true);
+                        break;
+                    }
                 }
+                listView()->setFocus();
             }
-            listView()->setFocus();
             break;
         case Qt::Key_Escape:
             {

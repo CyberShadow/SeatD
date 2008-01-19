@@ -47,6 +47,8 @@ class AVLTree(T)
 
     bool find(VT,RT)(VT v, out RT res)
     {
+        if ( root is null )
+            return false;
         return root.find(v, res);
     }
 
@@ -444,6 +446,26 @@ class Declaration
         if ( ident < d.ident )
             return -1;
         return 1;
+    }
+
+    /**********************************************************************************************
+        Returns the fully qualified identifier of this declaration without the module name.
+        If the declaration is a module itself, it's name is constructed, though.
+    **********************************************************************************************/
+    string fqnIdentWithoutModule()
+    {
+        string  fqn;
+        bool    no_module = dtType != Type.dtModule;
+        for ( auto d = this; d !is null; d = d.parent )
+        {
+            if ( no_module && d.dtType == Type.dtModule )
+                break;
+            if ( d !is this )
+                fqn = d.ident~"."~fqn;
+            else
+                fqn = ident;
+        }
+        return fqn;
     }
 
     /**********************************************************************************************

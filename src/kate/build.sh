@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DFLAGS="-fPIC -g -O -inline -release"
+DFLAGS="-fPIC -g -release"
 CFLAGS=-g
 LFLAGS=-g
 
@@ -42,7 +42,7 @@ cp ui.rc install/share/apps/kate/plugins/kateseatd/
 cp kateseatdplugin.la .libs/kateseatdplugin.so install/lib/kde3/
 
 pushd install
-tar cvj * > ../seatd_kate_x86-64_experimental.tar.bz2
+tar cvj * > ../seatd_kate_0.02-x86-64-alpha-preview.tar.bz2
 popd
 
 echo

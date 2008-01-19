@@ -50,30 +50,11 @@ public:
     }
 
     /**********************************************************************************************
-        Read a fully qualified identifier from the current editor buffer at the cursor.
-    **********************************************************************************************/
-    string fqIdentAtCursor()
-    {
-        return "";
-    }
-    
-    /**********************************************************************************************
         Output to a host logging facility, message box or similar.
     **********************************************************************************************/
     void log(string str)
     {
         Stdout.formatln("{}", str);
-    }
-
-    /**********************************************************************************************
-        Display a small hint-class message for signatures, DDocs, simple messages like
-        "identifier not found", or similar. Usually a small popup window.
-    **********************************************************************************************/
-    void callTip(string text)
-    {
-        char*[] entries;
-        entries ~= (text~\0).ptr;
-        kateShowCallTip(kate_instance_, entries.ptr, 1);
     }
 
     /**********************************************************************************************
@@ -119,7 +100,6 @@ protected:
     }
 }
 
-extern(C) void kateShowCallTip(void* plugin, char** entries, size_t count);
 extern(C) void kateSetCursor(void* plugin, uint line, uint col);
 extern(C) void kateGetCursor(void* plugin, uint* line, uint* col);
 extern(C) void kateOpenFile(void* plugin, char* filepath);
@@ -138,9 +118,11 @@ extern(C):
 **********************************************************************************************/
 void* seatdGetInstance(void* kate_instance)
 {
-    fprintf(stderr, "INIT'ING D RUNTIME\n");
+    fprintf(stderr, "Initiaizing Tango D Runtime\n");
     rt_init();
+    fprintf(stderr, "Disabling GC\n");
     GC.disable();
+    fprintf(stderr, "Instantiating D plugin class\n");
     SeatdKate sk;
     try {
         sk = SeatdKate.getInstance();
@@ -155,7 +137,7 @@ void* seatdGetInstance(void* kate_instance)
 
 void seatdListModules(void* inst, char* text, size_t len, char*** entries, size_t* count)
 {
-    auto dtext = text[0 .. len];
+    auto dtext = text[0 .. len].dup;
     debug
     {
         auto list = (cast(SeatdKate)inst).listModules(dtext);
@@ -191,7 +173,7 @@ void seatdFreeList(char** entries)
 
 void seatdListDeclarations(void* inst, char* text, size_t len, char*** entries, size_t* count)
 {
-    auto dtext = text[0 .. len];
+    auto dtext = text[0 .. len].dup;
     debug {
         auto list = (cast(SeatdKate)inst).listDeclarations(dtext);
         *count = list.length;
@@ -213,6 +195,22 @@ void seatdListDeclarations(void* inst, char* text, size_t len, char*** entries, 
         catch ( Exception e ) {
             *count = 0;
             *entries = null;
+            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
+        }
+    }
+}
+
+bool seatdGotoSymbol(void* inst, char* text, size_t text_len, char* symbol, size_t symbol_len)
+{
+    debug {
+        return (cast(SeatdKate)inst).gotoSymbol(text[0 .. text_len], symbol[0 .. symbol_len]);
+    }
+    else
+    {
+        try {
+            return (cast(SeatdKate)inst).gotoSymbol(text[0 .. text_len], symbol[0 .. symbol_len]);
+        }
+        catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
         }
     }

@@ -8,6 +8,7 @@ import tango.io.File;
 import tango.io.FileScan;
 import tango.io.FilePath;
 import tango.io.FileConst;
+import tango.io.Stdout;
 
 import tango.text.Ascii;
 import tango.text.Util;
@@ -51,11 +52,6 @@ public:
         Usually done using the file extension or editor settings.
     **********************************************************************************************/
     bool isParsableBuffer();
-
-    /**********************************************************************************************
-        Read a fully qualified identifier from the current editor buffer at the cursor.
-    **********************************************************************************************/
-    string fqIdentAtCursor();
     
     /**********************************************************************************************
         Get the current position of the cursor.
@@ -76,12 +72,6 @@ public:
         Output to a host logging facility, message box or similar.
     **********************************************************************************************/
     void log(string str);
-
-    /**********************************************************************************************
-        Display a small hint-class message for signatures, DDocs, simple messages like
-        "identifier not found", or similar. Usually a small popup window.
-    **********************************************************************************************/
-    void callTip(string text);
 
 
     //=============================================================================================
@@ -104,11 +94,13 @@ public:
         auto modinfo = parseBuffer(text);
 
         string[] list;
+        list_decls_ = null;
+        
         if ( modinfo !is null )
         {
             foreach ( Declaration decl; modinfo.decls )
             {
-                string ident = decl.fqnIdent;
+                string ident = decl.fqnIdentWithoutModule;
 /+                 if ( decl.mangled_type !is null )
                     full_list ~= ident~"_"~decl.mangled_type;
                 else
@@ -145,25 +137,6 @@ public:
         }
         
         return list;
-    }
-
-    /***********************************************************************************************
-
-    ***********************************************************************************************/
-    void gotoDeclarationAtCursor(string text)
-    {
-        auto bufferinfo = parseBuffer(text, false);
-
-        auto modinfo = bufferinfo;
-        Declaration decl = root_package_.findDeclaration(fqIdentAtCursor, modinfo);
-        if ( decl is null )
-            callTip("symbol not found");
-        else
-        {
-            if ( modinfo !is bufferinfo )
-                gotoModule(modinfo);
-            gotoDeclaration(decl);
-        }
     }
 
 
@@ -221,6 +194,23 @@ public:
             gotoDeclaration(*decl);
     }
 
+    bool gotoSymbol(string text, string symbol)
+    {
+        auto bufferinfo = parseBuffer(text, false);
+
+        auto modinfo = bufferinfo;
+        Declaration decl = root_package_.findDeclaration(symbol, modinfo);
+        if ( decl is null )
+            return false;
+        else
+        {
+            if ( modinfo !is bufferinfo )
+                gotoModule(modinfo);
+            gotoDeclaration(decl);
+        }
+        return true;
+    }
+
     /**********************************************************************************************
         Tries to locate and parse all imports of the given module in the given include path.
         Parses only, if the module to be imported hasn't been already parsed.
@@ -267,11 +257,7 @@ public:
     ModuleData parseBuffer(string text, bool warn_non_d_file=true)
     {
         if ( !isParsableBuffer )
-        {
-            if ( warn_non_d_file )
-                callTip("semantics only available in D source files");
             return null;
-        }
         
         ModuleData modinfo;
 

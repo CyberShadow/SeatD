@@ -34,6 +34,24 @@ class SeatdScite : public AbstractPlugin, public Extension
 
 // temporarily copied from abstract_plugin - becomes specialization
 
+    /***********************************************************************************************
+
+    ***********************************************************************************************/
+    void gotoDeclarationAtCursor(string text)
+    {
+        auto bufferinfo = parseBuffer(text, false);
+
+        auto modinfo = bufferinfo;
+        Declaration decl = root_package_.findDeclaration(fqIdentAtCursor, modinfo);
+        if ( decl is null )
+            callTip("symbol not found");
+        else
+        {
+            if ( modinfo !is bufferinfo )
+                gotoModule(modinfo);
+            gotoDeclaration(decl);
+        }
+    }
 
     /***********************************************************************************************
         Called when the user types text. Used to shrink the selection lists.
