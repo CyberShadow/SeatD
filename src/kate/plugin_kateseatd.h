@@ -10,6 +10,9 @@
 #include <kate/viewmanager.h>
 #include <kate/toolviewmanager.h>
 #include <klistview.h>
+#include <klistviewsearchline.h>
+#include <qlayout.h>
+#include <qwidget.h>
 
 /**************************************************************************************************
 
@@ -20,23 +23,28 @@ class KatePluginSeatdView : public QObject, public KXMLGUIClient
 
 public:
     Kate::MainWindow*   win;
-    KListView*          listview_;
 
     KatePluginSeatdView(void* seatd, Kate::MainWindow *w);
     virtual ~KatePluginSeatdView();
 
     void getBufferText(const char** text, size_t* length);
     void showSelectionList(const char** entries, size_t count);
+    void toggleSearchFocus();
 
 public slots:
     void viewChanged();
-    void listModules();
-    void listDeclarations();
+    void listModules(bool focus_search=true);
+    void listDeclarations(bool focus_search=true);
     void gotoSymbol(QListViewItem *);
+    void searchChanged(const QString&);
+    void searchSubmit();
 
 private:
-    void*       seatd_;
-    QWidget*    dock_;
+    QWidget*                dock_;
+    QWidget*                widget_;
+    KListView*              listview_;
+    QVBoxLayout*            vboxLayout_;
+    KListViewSearchLine*    search_input_;
 
     enum ListType {
         none,
@@ -44,6 +52,8 @@ private:
         modules
     };
     ListType    list_type_;
+
+    void*           seatd_;
 };
 
 
@@ -83,12 +93,12 @@ private:
 extern "C"
 {
     void* seatdGetInstance(void*);
-    void seatdListModules(void*);
     void seatdGotoDeclaration(void* plugin, const char* text, size_t len);
     void seatdGotoModule(void* plugin, const char* text, size_t len);
     void seatdOnChar(void* plugin, char c);
     void seatdSetBufferFile(void* inst, const char* filepath, size_t len);
-    void seatdListDeclarations(void* inst);
+    void seatdListDeclarations(void* inst, const char*** entries, size_t* count);
+    void seatdListModules(void* inst, const char*** entries, size_t* count);
 }
 
 static const char* const class_xpm[] = {

@@ -125,18 +125,6 @@ public:
         return true;
     }
 
-    /**********************************************************************************************
-        Display a selection list.
-        Will be called repeatedly, while the user types and the list shrinks.
-    **********************************************************************************************/
-    void showSelectionList(string[] entries)
-    {
-        auto clist = new char*[entries.length];
-        foreach ( i, e; entries )
-            clist[i] = (e~\0).ptr;
-        kateShowSelectionList(kate_instance_, clist.ptr, clist.length);
-    }
-
 
 protected:
     void* kate_instance_;
@@ -148,7 +136,6 @@ protected:
 }
 
 extern(C) void kateGetBufferText(void* plugin, char** text, size_t* length);
-extern(C) void kateShowSelectionList(void* plugin, char** entries, size_t count);
 extern(C) void kateShowCallTip(void* plugin, char** entries, size_t count);
 extern(C) void kateSetCursor(void* plugin, uint line, uint col);
 extern(C) void kateGetCursor(void* plugin, uint* line, uint* col);
@@ -182,15 +169,27 @@ void* seatdGetInstance(void* kate_instance)
     return cast(void*)sk;
 }
 
-void seatdListModules(void* inst)
+void seatdListModules(void* inst, char*** entries, size_t* count)
 {
-    debug {
-        (cast(SeatdKate)inst).listModules();
-    }
+    debug
+    {
+        auto list = (cast(SeatdKate)inst).listModules();
+        *count = list.length;
+        auto clist = new char*[list.length];
+        foreach ( i, e; list )
+            clist[i] = (e~\0).ptr;
+        *entries = clist.ptr;
+   }
     else
     {
-        try {
-            (cast(SeatdKate)inst).listModules();
+        try
+        {
+            auto list = (cast(SeatdKate)inst).listModules();
+            *count = list.length;
+            auto clist = new char*[list.length];
+            foreach ( i, e; list )
+                clist[i] = (e~\0).ptr;
+            *entries = clist.ptr;
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
@@ -198,15 +197,25 @@ void seatdListModules(void* inst)
     }
 }
 
-void seatdListDeclarations(void* inst)
+void seatdListDeclarations(void* inst, char*** entries, size_t* count)
 {
     debug {
-        (cast(SeatdKate)inst).listDeclarations();
+        auto list = (cast(SeatdKate)inst).listDeclarations();
+        *count = list.length;
+        auto clist = new char*[list.length];
+        foreach ( i, e; list )
+            clist[i] = (e~\0).ptr;
+        *entries = clist.ptr;
     }
     else
     {
         try {
-            (cast(SeatdKate)inst).listDeclarations();
+            auto list = (cast(SeatdKate)inst).listDeclarations();
+            *count = list.length;
+            auto clist = new char*[list.length];
+            foreach ( i, e; list )
+                clist[i] = (e~\0).ptr;
+            *entries = clist.ptr;
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
@@ -239,22 +248,6 @@ void seatdGotoModule(void* inst, char* text, size_t len)
     {
         try {
             (cast(SeatdKate)inst).gotoModule(text[0 .. len]);
-        }
-        catch ( Exception e ) {
-            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
-        }
-    }
-}
-
-void seatdOnChar(void* inst, char c)
-{
-    debug {
-        (cast(SeatdKate)inst).onChar(c);
-    }
-    else
-    {
-        try {
-            (cast(SeatdKate)inst).onChar(c);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);

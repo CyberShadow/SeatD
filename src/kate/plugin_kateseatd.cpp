@@ -66,18 +66,6 @@ void KatePluginSeatd::removeView(Kate::MainWindow *win)
 }
 
 //=================================================================================================
-extern "C" void kateShowSelectionList(void* plugin, const char** entries, size_t count)
-{
-    ((KatePluginSeatd*)plugin)->showSelectionList(entries, count);
-}
-
-//=================================================================================================
-void KatePluginSeatd::showSelectionList(const char** entries, size_t count)
-{
-    views_.at(0)->showSelectionList(entries, count);
-}
-
-//=================================================================================================
 extern "C" void kateShowCallTip(void* plugin, const char** entries, size_t count)
 {
     ((KatePluginSeatd*)plugin)->showCallTip(entries, count);
@@ -191,19 +179,15 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
     w->guiFactory()->addClient(this);
 
     dock_ = win->toolViewManager()->createToolView("kate_plugin_seatd", Kate::ToolViewManager::Left, QPixmap((const char**)class_xpm), i18n("SEATD Lists"));
-    listview_ = new KListView(dock_);
+    widget_ = new QWidget(dock_);
+    vboxLayout_ = new QVBoxLayout(widget_);
+    search_input_ = new KListViewSearchLine(widget_);
+    listview_ = new KListView(widget_);
+    search_input_->setListView(listview_);
+    vboxLayout_->addWidget(search_input_);
+    vboxLayout_->addWidget(listview_);
 
-    connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
-    connect(listview_, SIGNAL(returnPressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
-    connect(listview_, SIGNAL(spacePressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
-//    connect(listview_, SIGNAL(rightButtonClicked(QListViewItem *, const QPoint&, int)),
-//           SLOT(slotShowContextMenu(QListViewItem *, const QPoint&, int)));
-//    connect(win->viewManager(), SIGNAL(viewChanged()), this, SLOT(slotDocChanged()));
-    //connect(symbols, SIGNAL(resizeEvent(QResizeEvent *)), this, SLOT(slotViewChanged(QResizeEvent *)));
-
-    //symbols->addColumn(i18n("Symbols"), symbols->parentWidget()->width());
     listview_->addColumn(i18n("Name"));
-    listview_->addColumn(i18n("Position"));
     listview_->setColumnWidthMode(1, QListView::Manual);
     listview_->setColumnWidth ( 1, 0 );
     listview_->setSorting(-1, FALSE);
@@ -211,10 +195,11 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
     listview_->setTreeStepSize(10);
     listview_->setShowToolTips(TRUE);
 
-    connect(
-        win->viewManager(), SIGNAL(viewChanged()),
-        this, SLOT(viewChanged())
-    );
+    connect(search_input_, SIGNAL(returnPressed()), this, SLOT(searchSubmit()));
+    connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+    connect(listview_, SIGNAL(returnPressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+    connect(listview_, SIGNAL(spacePressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+    connect(win->viewManager(), SIGNAL(viewChanged()), this, SLOT(viewChanged()));
 }
 
 //=================================================================================================
@@ -222,6 +207,20 @@ KatePluginSeatdView::~KatePluginSeatdView()
 {
     win->guiFactory()->removeClient(this);
     delete dock_;
+}
+
+//=================================================================================================
+void KatePluginSeatdView::searchSubmit()
+{
+    const int iend = listview_->childCount()-1;
+    for ( int i = 0; i < iend; ++i )
+    {
+        QListViewItem* item = listview_->itemAtIndex(i);
+        if ( item->isVisible() ) {
+            gotoSymbol(item);
+            break;
+        }
+    }
 }
 
 //=================================================================================================
@@ -239,42 +238,61 @@ void KatePluginSeatdView::viewChanged()
     {
         default:
         case decls:
-            listDeclarations();
+            listDeclarations(false);
             break;
         case modules:
-            listModules();
+            listModules(false);
             break;
     }
 }
 
 //=================================================================================================
-void KatePluginSeatdView::listModules()
+void KatePluginSeatdView::toggleSearchFocus()
 {
-    seatdListModules(seatd_);
-    list_type_ = modules;
-    if ( listview_->hasFocus() )
+    if ( search_input_->hasFocus() )
     {
         Kate::View* view = win->viewManager()->activeView();
         if ( view )
             view->setFocus();
     }
     else
-        listview_->setFocus();
+        search_input_->setFocus();
 }
 
 //=================================================================================================
-void KatePluginSeatdView::listDeclarations()
+void KatePluginSeatdView::listModules(bool focus_search)
 {
-    seatdListDeclarations(seatd_);
+    const char**    entries;
+    size_t          count;
+    seatdListModules(seatd_, &entries, &count);
+
+    listview_->clear();
+    search_input_->clear();
+    for ( int i = 0; i < count; ++i )
+        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+
+    list_type_ = modules;
+
+    if ( focus_search )
+        toggleSearchFocus();
+}
+
+//=================================================================================================
+void KatePluginSeatdView::listDeclarations(bool focus_search)
+{
+    const char**    entries;
+    size_t          count;
+    seatdListDeclarations(seatd_, &entries, &count);
+
+    listview_->clear();
+    search_input_->clear();
+    for ( int i = 0; i < count; ++i )
+        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
+
     list_type_ = decls;
-    if ( listview_->hasFocus() )
-    {
-        Kate::View* view = win->viewManager()->activeView();
-        if ( view )
-            view->setFocus();
-    }
-    else
-        listview_->setFocus();
+
+    if ( focus_search )
+        toggleSearchFocus();
 }
 
 //=================================================================================================
@@ -293,14 +311,6 @@ void KatePluginSeatdView::getBufferText(const char** text, size_t* length)
     memcpy(buf, (const char*)data, data.length());
     *text = buf;
     *length = data.length();
-}
-
-//=================================================================================================
-void KatePluginSeatdView::showSelectionList(const char** entries, size_t count)
-{
-    listview_->clear();
-    for ( int i = 0; i < count; ++i )
-        new QListViewItem(listview_, listview_->lastItem(), entries[i]);
 }
 
 //=================================================================================================

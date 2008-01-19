@@ -31,6 +31,79 @@ class SeatdScite : public AbstractPlugin, public Extension
     {
         super();
     }
+
+// temporarily copied from abstract_plugin - becomes specialization
+
+
+    /***********************************************************************************************
+        Called when the user types text. Used to shrink the selection lists.
+        Uses control character 0x08 for backspace.
+
+        Returns:    true if the character has been processed. Usually it shouldn't be processed
+                    by other parts of the editor in that case.
+    ***********************************************************************************************/
+    bool onChar(dchar c)
+    {
+        if ( c == '.' || c == 8 || contains(FQN_CHARS, c) )
+        {
+            string[] prev_list;
+
+            if ( c == 8 )
+            {
+                prev_list = full_list_;
+                if ( live_search_str_.length > 0 )
+                    live_search_str_ = live_search_str_[0..$-1];
+                if ( live_search_str_.length == 0 ) {
+                    current_list_ = prev_list;
+                    showSelectionList(false);
+                    return true;
+                }
+            }
+            else
+            {
+                live_search_str_ ~= c;
+                if ( current_list_ is null )
+                    prev_list = full_list_;
+                else
+                    prev_list = current_list_;
+            }
+
+            current_list_ = null;
+            foreach ( l; prev_list )
+            {
+                auto source = toUpper(l.dup);
+                if ( locatePattern(source, live_search_str_) < source.length )
+                    current_list_ ~= l;
+            }
+
+            showSelectionList(false);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**********************************************************************************************
+
+    **********************************************************************************************/
+    void showSelectionList(bool init=true)
+    {
+        if ( init ) {
+            full_list_.sort;
+            current_list_ = full_list_;
+            live_search_str_ = null;
+        }
+
+        showSelectionList(current_list_);
+    }
+
+
+    string              live_search_str_;
+    string[]            full_list_,
+                        current_list_;
+
+    
+// temp copy end
     
     /**********************************************************************************************
         Get a list of include paths that have been set by the user in some configuration facility.

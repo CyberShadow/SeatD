@@ -16,5 +16,5 @@ libtool --mode=link g++ -g -avoid-version -no-undefined -module -rpath /usr/lib/
 # sudo cp kateseatdplugin.la .libs/kateseatdplugin.so /usr/lib/kde3/
 
 cp kateseatd.desktop ~/.kde/share/services/
-cp ui.rc ~/.kde/share/apps/kate/plugins/kateseatd/
+#cp ui.rc ~/.kde/share/apps/kate/plugins/kateseatd/
 cp kateseatdplugin.la .libs/kateseatdplugin.so ~/.kde/lib/kde3/

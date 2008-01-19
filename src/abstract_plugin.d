@@ -90,13 +90,6 @@ public:
     **********************************************************************************************/
     void callTip(string text);
 
-    /**********************************************************************************************
-        Display a selection list.
-        Will be called repeatedly, while the user types and the list shrinks.
-    **********************************************************************************************/
-    void showSelectionList(string[] entries);
-
-
 
     //=============================================================================================
     // Interface to SEATD plugin functionality. Called by host specific subclass
@@ -111,87 +104,38 @@ public:
     }
 
     /***********************************************************************************************
-        Called when the user types text. Used to shrink the selection lists.
-        Uses control character 0x08 for backspace.
-
-        Returns:    true if the character has been processed. Usually it shouldn't be processed
-                    by other parts of the editor in that case.
-    ***********************************************************************************************/
-    bool onChar(dchar c)
-    {
-        if ( c == '.' || c == 8 || contains(FQN_CHARS, c) )
-        {
-            string[] prev_list;
-
-            if ( c == 8 )
-            {
-                prev_list = full_list_;
-                if ( live_search_str_.length > 0 )
-                    live_search_str_ = live_search_str_[0..$-1];
-                if ( live_search_str_.length == 0 ) {
-                    current_list_ = prev_list;
-                    showSelectionList(false);
-                    return true;
-                }
-            }
-            else
-            {
-                live_search_str_ ~= c;
-                if ( current_list_ is null )
-                    prev_list = full_list_;
-                else
-                    prev_list = current_list_;
-            }
-
-            current_list_ = null;
-            foreach ( l; prev_list )
-            {
-                auto source = toUpper(l.dup);
-                if ( locatePattern(source, live_search_str_) < source.length )
-                    current_list_ ~= l;
-            }
-
-            showSelectionList(false);
-            return true;
-        }
-
-        return false;
-    }
-
-    /***********************************************************************************************
 
     ***********************************************************************************************/
-    void listDeclarations()
+    string[] listDeclarations()
     {
         auto modinfo = parseBuffer;
 
+        string[] list;
         if ( modinfo !is null )
         {
-            list_decls_ = null;
-            full_list_ = null;
             foreach ( Declaration decl; modinfo.decls )
             {
                 string ident = decl.fqnIdent;
 /+                 if ( decl.mangled_type !is null )
                     full_list ~= ident~"_"~decl.mangled_type;
                 else
- +/                    full_list_ ~= ident;
+ +/                    list ~= ident;
                 list_decls_[ident] = decl;
             }
-
-            showSelectionList();
         }
+        
+        return list;
     }
 
     /***********************************************************************************************
 
     ***********************************************************************************************/
-    void listModules()
+    string[] listModules()
     {
         auto modinfo = parseBuffer;
 
+        string[] list;
         list_modules_ = null;
-        full_list_ = null;
         
         Stack!(PackageData) stack;
         stack ~= root_package_;
@@ -200,14 +144,14 @@ public:
             auto pak = stack.pop;
             foreach ( mod; pak.modules )
             {
-                full_list_ ~= mod.fqname;
+                list ~= mod.fqname;
                 list_modules_[mod.fqname] = mod;
             }
             foreach ( p; pak.packages )
                 stack ~= p;
         }
-
-        showSelectionList();
+        
+        return list;
     }
 
     /***********************************************************************************************
@@ -404,20 +348,6 @@ public:
         return paths;
     }
 
-    /**********************************************************************************************
-
-    **********************************************************************************************/
-    void showSelectionList(bool init=true)
-    {
-        if ( init ) {
-            full_list_.sort;
-            current_list_ = full_list_;
-            live_search_str_ = null;
-        }
-
-        showSelectionList(current_list_);
-    }
-
 
 
     const dstring FQN_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"d;
@@ -428,9 +358,6 @@ protected:
 
     Declaration[string] list_decls_;
     ModuleData[string]  list_modules_;
-    string              live_search_str_;
-    string[]            full_list_,
-                        current_list_;
 
     PackageData     root_package_;
 }
