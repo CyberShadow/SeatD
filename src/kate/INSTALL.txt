@@ -28,3 +28,14 @@ svn co https://svn.mainia.de/svn/SEATD/trunk
 - try running build.sh
 - here you will probably have to adjust paths etc.
 - the build.sh already copies the plugin files to you home directory. if everything worked, you can run Kate and activate the plugin in the settings.
+
+Trouble shooting
+- if the plugin does not show up in Kate's settings:
+- check the paths
+- check whether the .so file can be loaded:
+    - compile test_loader with
+        g++ test_loader.cc -o test_loader -ldl
+    - run it with
+        test_loader .libs/kateseatdplugin.so
+    - try to fix the error you get
+

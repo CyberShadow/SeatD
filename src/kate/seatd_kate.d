@@ -2,6 +2,7 @@
  *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
+// kate: SEATDIncludePath /usr/include/d/4.1
 module kate.seatd_kate;
 
 import abstract_plugin;
@@ -9,6 +10,7 @@ import abstract_plugin;
 import tango.stdc.stdio;
 import tango.stdc.string;
 import tango.text.convert.Layout;
+import tango.text.Util;
 
 import tango.core.Memory;
 
@@ -42,11 +44,14 @@ public:
     }
     
     /**********************************************************************************************
-        Access key-value pair from the configuration
+        Get a list of include paths that have been set by the user in some configuration facility.
     **********************************************************************************************/
-    string configProperty(string name)
+    string[] getIncludePaths()
     {
-        return "";
+        char* ptr;
+        size_t len;
+        kateGetDocumentVariable(kate_instance_, "SEATDIncludePath", &ptr, &len);
+        return split(ptr[0 .. len], ",");
     }
 
     /**********************************************************************************************
@@ -148,6 +153,7 @@ extern(C) void kateShowCallTip(void* plugin, char** entries, size_t count);
 extern(C) void kateSetCursor(void* plugin, uint line, uint col);
 extern(C) void kateGetCursor(void* plugin, uint* line, uint* col);
 extern(C) void kateOpenFile(void* plugin, char* filepath);
+extern(C) void kateGetDocumentVariable(void* plugin, char* name, char** str, size_t* len);
 
 extern(C) bool rt_init( void delegate(Exception e) dg = null );
 extern(C) bool rt_term( void delegate(Exception e) dg = null );
@@ -227,12 +233,12 @@ void seatdGotoDeclaration(void* inst, char* text, size_t len)
 void seatdGotoModule(void* inst, char* text, size_t len)
 {
     debug {
-        (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
+        (cast(SeatdKate)inst).gotoModule(text[0 .. len]);
     }
     else
     {
         try {
-            (cast(SeatdKate)inst).gotoDeclaration(text[0 .. len]);
+            (cast(SeatdKate)inst).gotoModule(text[0 .. len]);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);

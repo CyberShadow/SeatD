@@ -67,6 +67,7 @@ public:
     void getCursor(unsigned int* line, unsigned int* col);
     void setCursor(unsigned int line, unsigned int col);
     void openFile(const char* filepath);
+    void getDocumentVariable(const char* name, const char** str, size_t* len);
 
 public slots:
 

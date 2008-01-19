@@ -139,28 +139,63 @@ void KatePluginSeatd::openFile(const char* filepath)
 }
 
 //=================================================================================================
+extern "C" void kateGetDocumentVariable(void* plugin, const char* name, const char** str, size_t* len)
+{
+    ((KatePluginSeatd*)plugin)->getDocumentVariable(name, str, len);
+}
+
+//=================================================================================================
+void KatePluginSeatd::getDocumentVariable(const char* name, const char** str, size_t* len)
+{
+    Kate::DocumentManager* dm = application()->documentManager();
+    QString qname = name,
+            concat_val;
+    for ( int i = dm->documents()-1; i >= 0; --i )
+    {
+        Kate::DocumentExt* doc = documentExt(dm->document(i));
+        if ( !doc )
+            continue;
+        QString val = doc->variable(qname);
+        if ( val.length() > 0 )
+        {
+            if ( concat_val.length() > 0 )
+                concat_val += ",";
+            concat_val += val;
+        }
+    }
+    
+    // TODO: free that memory
+    char* buf = new char[concat_val.length()];
+    memcpy(buf, (const char*)concat_val, concat_val.length());
+    *str = buf;
+    *len = concat_val.length();
+}
+
+//=================================================================================================
 KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : seatd_(seatd), win(w), list_type_(none)
 {
-    setInstance(new KInstance("kate"));
-    setXMLFile("plugins/kateseatd/ui.rc");
-    w->guiFactory()->addClient(this);
-
     new KAction(
         i18n("List Modules"), 0, this,
         SLOT( listModules() ), actionCollection(),
-        "tools_list_modules"
+        "view_list_modules"
     );
              
     new KAction(
         i18n("List Declarations"), 0, this,
         SLOT( listDeclarations() ), actionCollection(),
-        "tools_list_declarations"
+        "view_list_declarations"
     );
+
+    setInstance(new KInstance("kate"));
+    setXMLFile("plugins/kateseatd/ui.rc");
+    w->guiFactory()->addClient(this);
 
     dock_ = win->toolViewManager()->createToolView("kate_plugin_seatd", Kate::ToolViewManager::Left, QPixmap((const char**)class_xpm), i18n("SEATD Lists"));
     listview_ = new KListView(dock_);
 
     connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+    connect(listview_, SIGNAL(returnPressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
+    connect(listview_, SIGNAL(spacePressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
 //    connect(listview_, SIGNAL(rightButtonClicked(QListViewItem *, const QPoint&, int)),
 //           SLOT(slotShowContextMenu(QListViewItem *, const QPoint&, int)));
 //    connect(win->viewManager(), SIGNAL(viewChanged()), this, SLOT(slotDocChanged()));
@@ -185,7 +220,8 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w) : sea
 //=================================================================================================
 KatePluginSeatdView::~KatePluginSeatdView()
 {
-    win->guiFactory()->removeClient (this);
+    win->guiFactory()->removeClient(this);
+    delete dock_;
 }
 
 //=================================================================================================
@@ -216,6 +252,14 @@ void KatePluginSeatdView::listModules()
 {
     seatdListModules(seatd_);
     list_type_ = modules;
+    if ( listview_->hasFocus() )
+    {
+        Kate::View* view = win->viewManager()->activeView();
+        if ( view )
+            view->setFocus();
+    }
+    else
+        listview_->setFocus();
 }
 
 //=================================================================================================
@@ -223,6 +267,14 @@ void KatePluginSeatdView::listDeclarations()
 {
     seatdListDeclarations(seatd_);
     list_type_ = decls;
+    if ( listview_->hasFocus() )
+    {
+        Kate::View* view = win->viewManager()->activeView();
+        if ( view )
+            view->setFocus();
+    }
+    else
+        listview_->setFocus();
 }
 
 //=================================================================================================
@@ -234,7 +286,8 @@ void KatePluginSeatdView::getBufferText(const char** text, size_t* length)
     Kate::Document* doc = view->getDoc();
     if ( !doc )
         return;
-    
+
+    // TODO: free that memory
     QString data = doc->text();
     char* buf = new char[data.length()];
     memcpy(buf, (const char*)data, data.length());
@@ -264,4 +317,7 @@ void KatePluginSeatdView::gotoSymbol(QListViewItem* item)
         default:
             break;
     }
+    Kate::View* view = win->viewManager()->activeView();
+    if ( view )
+        view->setFocus();
 }
