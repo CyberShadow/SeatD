@@ -24,6 +24,14 @@ import tango.stdc.stdio;
 alias char[] string;
 alias dchar[] dstring;
 
+struct Location
+{
+    string  filepath;
+    uint    line,
+            column;
+}
+
+
 /**************************************************************************************************
     Host independent editor plugin with basic code navigation functionality.
     Needs to be sublassed in order to implement host specific functions.
@@ -38,7 +46,6 @@ public:
         root_package_ = new PackageData;
     }
 
-    
     //=============================================================================================
     // Interface to the host, needs to be overridden in host specific subclass.
 
@@ -146,7 +153,7 @@ public:
     /**********************************************************************************************
         Open the source file of the given module in the editor.
     **********************************************************************************************/
-    void gotoModule(ModuleData modinfo)
+    void gotoModule(ModuleData modinfo, bool save_current=true)
     {
         if ( modinfo is null )
             return;
@@ -166,6 +173,8 @@ public:
         else
             fname = modinfo.filepath.toString;
 
+        if ( save_current )
+            saveCurrentLocation();
         openFile(fname);
     }
 
@@ -175,15 +184,17 @@ public:
         if ( mod !is null )
             gotoModule(*mod);
     }
-    
+
     /**********************************************************************************************
         Move the cursor to the line of the given declaration.
         Assumes that the correct file is active.
     **********************************************************************************************/
-    void gotoDeclaration(Declaration decl)
+    void gotoDeclaration(Declaration decl, bool save_current=true)
     {
         if ( decl is null )
             return;
+        if ( save_current )
+            saveCurrentLocation();
         setCursor(decl.line-1, decl.column-1);
     }
 
@@ -204,11 +215,50 @@ public:
             return false;
         else
         {
+            saveCurrentLocation();
             if ( modinfo !is bufferinfo )
-                gotoModule(modinfo);
-            gotoDeclaration(decl);
+                gotoModule(modinfo, false);
+            gotoDeclaration(decl, false);
         }
         return true;
+    }
+
+    /**********************************************************************************************
+
+    **********************************************************************************************/
+    void gotoPrevious()
+    {
+        if ( next_history_index_ <= 0 )
+            return;
+        if ( next_history_index_ >= history_top_ ) {
+            saveCurrentLocation();
+            --next_history_index_;
+        }
+        --next_history_index_;
+
+        debug Stdout.formatln("Goto {}({}:{}) {} of {}",
+            history_[next_history_index_].filepath, history_[next_history_index_].line,
+            history_[next_history_index_].column, next_history_index_, history_top_
+        );
+        openFile(history_[next_history_index_].filepath);
+        setCursor(history_[next_history_index_].line, history_[next_history_index_].column);
+    }
+
+    /**********************************************************************************************
+
+    **********************************************************************************************/
+    void gotoNext()
+    {
+        if ( next_history_index_ >= history_top_-1 )
+            return;
+        ++next_history_index_;
+
+        debug Stdout.formatln("Goto {}({}:{}) {} of {}",
+            history_[next_history_index_].filepath, history_[next_history_index_].line,
+            history_[next_history_index_].column, next_history_index_, history_top_
+        );
+        openFile(history_[next_history_index_].filepath);
+        setCursor(history_[next_history_index_].line, history_[next_history_index_].column);
     }
 
     /**********************************************************************************************
@@ -325,9 +375,28 @@ public:
         return paths;
     }
 
+    /**********************************************************************************************
+        Saves the current location in the history.
+    **********************************************************************************************/
+    void saveCurrentLocation()
+    {
+        uint line, col;
+        getCursor(line, col);
+        if ( next_history_index_ >= history_.length )
+            history_.length = history_.length*2+1;
+        if ( next_history_index_ > 0 )
+        {
+            Location loc = history_[next_history_index_-1];
+            if ( loc.filepath == active_filepath_ && loc.line == line )
+                return;
+        }
+        
+        debug Stdout.formatln("Saving {}({}:{}) {}", active_filepath_, line, col, next_history_index_);
+        history_[next_history_index_] = Location(active_filepath_, line, col);
+        history_[next_history_index_++] = Location(active_filepath_, line, col);
+        history_top_ = next_history_index_;
+    }
 
-
-    const dstring FQN_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"d;
 
 protected:
     string              active_filepath_;
@@ -336,5 +405,9 @@ protected:
     Declaration[string] list_decls_;
     ModuleData[string]  list_modules_;
 
-    PackageData     root_package_;
+    PackageData         root_package_;
+
+    Location[]          history_;
+    uint                next_history_index_,
+                        history_top_;
 }

@@ -157,6 +157,18 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w)
         SLOT( gotoDeclaration() ), actionCollection(),
         "view_goto_declaration"
     );
+             
+    new KAction(
+        i18n("Goto Previous Location"), 0, this,
+        SLOT( gotoPrevious() ), actionCollection(),
+        "view_goto_previous"
+    );
+             
+    new KAction(
+        i18n("Goto Next Location"), 0, this,
+        SLOT( gotoNext() ), actionCollection(),
+        "view_goto_next"
+    );
 
     setInstance(new KInstance("kate"));
     setXMLFile("plugins/kateseatd/ui.rc");
@@ -233,23 +245,6 @@ void KatePluginSeatdView::viewChanged()
 }
 
 //=================================================================================================
-void KatePluginSeatdView::toggleSearchFocus()
-{
-    if ( search_input_->hasFocus() )
-    {
-        if ( hide_doc_on_defocus_ ) {
-            hide_doc_on_defocus_ = false;
-            win->toolViewManager()->hideToolView(dock_);
-        }
-        Kate::View* view = win->viewManager()->activeView();
-        if ( view )
-            view->setFocus();
-    }
-    else
-        search_input_->setFocus();
-}
-
-//=================================================================================================
 void KatePluginSeatdView::gotoDeclaration()
 {
     Kate::View* view = win->viewManager()->activeView();
@@ -267,6 +262,18 @@ void KatePluginSeatdView::gotoDeclaration()
         QStringList entries("Symbol not found");
         view->showArgHint(entries, "", "");
     }
+}
+
+//=================================================================================================
+void KatePluginSeatdView::gotoPrevious()
+{
+    seatdGotoPrevious(seatd_);
+}
+
+//=================================================================================================
+void KatePluginSeatdView::gotoNext()
+{
+    seatdGotoNext(seatd_);
 }
 
 //=================================================================================================
@@ -296,7 +303,7 @@ void KatePluginSeatdView::listModules(bool manual_invoke)
             hide_doc_on_defocus_ = true;
             win->toolViewManager()->showToolView(dock_);
         }
-        toggleSearchFocus();
+        search_input_->setFocus();
     }
 }
 
@@ -327,7 +334,7 @@ void KatePluginSeatdView::listDeclarations(bool manual_invoke)
             hide_doc_on_defocus_ = true;
             win->toolViewManager()->showToolView(dock_);
         }
-        toggleSearchFocus();
+        search_input_->setFocus();
     }
 }
 
@@ -437,6 +444,7 @@ void SeatdSearchLine::selectFirstVisible(QListViewItem* item)
             break;
         }
     }
+    listView()->update();
 }
 
 //=================================================================================================
@@ -486,6 +494,11 @@ void SeatdSearchLine::keyPressEvent(QKeyEvent* e)
             break;
         case Qt::Key_Escape:
             {
+/*                if ( hide_doc_on_defocus_ ) {
+                    hide_doc_on_defocus_ = false;
+                    win->toolViewManager()->hideToolView(dock_);
+                }
+*/
                 Kate::View* view = win->viewManager()->activeView();
                 if ( view )
                     view->setFocus();

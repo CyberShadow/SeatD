@@ -59,6 +59,8 @@ public slots:
     void gotoSymbol(QListViewItem *);
     void searchSubmit();
     void gotoDeclaration();
+    void gotoPrevious();
+    void gotoNext();
 
 private:
     QWidget*            dock_;
@@ -118,6 +120,8 @@ extern "C"
     bool seatdGotoSymbol(void* plugin, const char*, size_t, const char*, size_t);
     void seatdGotoDeclaration(void* plugin, const char* text, size_t len);
     void seatdGotoModule(void* plugin, const char* text, size_t len);
+    void seatdGotoPrevious(void* plugin);
+    void seatdGotoNext(void* plugin);
     void seatdOnChar(void* plugin, char c);
     void seatdSetBufferFile(void* inst, const char* filepath, size_t len);
     void seatdListDeclarations(void* inst, const char* text, size_t len, const char*** entries, size_t* count);

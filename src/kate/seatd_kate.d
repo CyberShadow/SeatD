@@ -2,6 +2,7 @@
  *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
+// kate: SEATDIncludePath /usr/include/d/4.1
 module kate.seatd_kate;
 
 import abstract_plugin;
@@ -257,6 +258,38 @@ void seatdSetBufferFile(void* inst, char* filepath, size_t len)
     {
         try {
             (cast(SeatdKate)inst).setActiveFilepath(filepath[0 .. len]);
+        }
+        catch ( Exception e ) {
+            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
+        }
+    }
+}
+
+void seatdGotoPrevious(void* inst)
+{
+    debug {
+        (cast(SeatdKate)inst).gotoPrevious();
+    }
+    else
+    {
+        try {
+            (cast(SeatdKate)inst).gotoPrevious();
+        }
+        catch ( Exception e ) {
+            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
+        }
+    }
+}
+
+void seatdGotoNext(void* inst)
+{
+    debug {
+        (cast(SeatdKate)inst).gotoNext();
+    }
+    else
+    {
+        try {
+            (cast(SeatdKate)inst).gotoNext();
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
