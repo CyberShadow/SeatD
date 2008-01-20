@@ -16,7 +16,8 @@ Prerequisites
 -------------------------------------------------------------------------------
 
 - Kate 3.5 (newer version might also work)
-- KDE3 devel package including tools (moc is needed) (KDE4 might also work)
+- KDE3 devel package including tools (usually, installing all dependencies of your kde-devel package should work)
+- libtool
 - GDC
 - Tango 0.99.4 sources
 - Rebuild (from DSSS package)
@@ -26,9 +27,9 @@ Step 1  Build the Tango runtime with Position Independent Code (PIC),
         s.t. it can be used in a dynamically loaded library (or shared object)
 -------------------------------------------------------------------------------
 
-- Get the patch http://dsource.org/projects/tango/attachment/ticket/857/tango-0.99.4_dynload2.patch?format=raw
-- apply it in the tango base directory:
-patch < tango-0.99.4_dynload2.patch
+- Get the patch http://dsource.org/projects/tango/attachment/ticket/857/tango-0.99.4_dynload3.patch?format=raw
+- apply it in the tango base directory with:
+patch -p0 < tango-0.99.4_dynload3.patch
 - goto tango/lib
 - execute the following:
 export DFLAGS=-fPIC

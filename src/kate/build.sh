@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DFLAGS="-fPIC -g -release"
+DFLAGS="-fPIC -g -release -I/usr/include/d/4.1"
 CFLAGS=-g
 LFLAGS=-g
 
