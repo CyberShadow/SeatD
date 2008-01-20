@@ -1,7 +1,7 @@
 #include <iostream>
 #include <dlfcn.h>
 
-typedef void* (*getSEATDInstance_t)(void*);
+typedef void* (*seatdGetInstance_t)(void*);
 
 int main(int argc, char** argv)
 {
@@ -24,10 +24,10 @@ int main(int argc, char** argv)
     const char* err = dlerror();
     if ( err )
         cerr << "Errors: " << dlerror() << '\n';
-    getSEATDInstance_t getSEATDInstance = (getSEATDInstance_t)dlsym(handle, "getSEATDInstance");
+    seatdGetInstance_t seatdGetInstance = (seatdGetInstance_t)dlsym(handle, "seatdGetInstance");
     const char *dlsym_error = dlerror();
     if ( dlsym_error ) {
-        cerr << "Cannot load symbol 'getSEATDInstance': " << dlsym_error << '\n';
+        cerr << "Cannot load symbol 'seatdGetInstance': " << dlsym_error << '\n';
         dlclose(handle);
         return 1;
     }
@@ -37,8 +37,8 @@ int main(int argc, char** argv)
     char str[80];
     memcpy(str, "from C++ to D", 14);
     printf("sending pointer %x\n", str);
-    void* instance = getSEATDInstance(str);
-    printf("recieved pointer %x\n", instance);
+    void* instance = seatdGetInstance(str);
+    printf("successfully recieved pointer %x\n", instance);
     
     // close the library
     cout << "Closing library...\n";
