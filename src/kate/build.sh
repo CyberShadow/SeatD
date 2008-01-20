@@ -50,6 +50,9 @@ echo -------------------------------------------------------------------
 echo Installing to user home
 echo -------------------------------------------------------------------
 
+mkdir -p ~/.kde/lib/kde3
+mkdir -p ~/.kde/share/apps/kate/plugins/kateseatd
+mkdir -p ~/.kde/share/services
 cp kateseatd.desktop ~/.kde/share/services/
 cp -u ui.rc ~/.kde/share/apps/kate/plugins/kateseatd/
 cp kateseatdplugin.la .libs/kateseatdplugin.so ~/.kde/lib/kde3/
