@@ -89,7 +89,7 @@ APDLexemes
     }
 }
 
-APDDeclaration
+APDGlobal
 {
 /*  SEATD - Semantics Aware Tools for D
  *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
@@ -97,7 +97,14 @@ APDDeclaration
  */
 module seatd.parser;
 
-import seatd.module_data;
+import seatd.symbol;
+import seatd.type;
+import container;
+import common;
+
+import tango.io.FilePath;
+
+alias _ST_DeclDef DeclDefNode;
 
 uint findEOL(string str)
 {
@@ -196,100 +203,147 @@ WhitespaceNested
 /**************************************************************************************************
     Modules
 **************************************************************************************************/
-Module(ModuleData info, out bool has_module_decl)
+seatdModule(Package root, Module mod)
 {
     ModuleDeclarationOpt DeclDefsOpt
     {
-        Declaration module_decl;
-        ModuleDeclarationOpt(info, module_decl);
-        if ( module_decl !is null )
-            has_module_decl = true;
-        DeclAttribute attrs;
-        DeclDefsOpt(info, module_decl, attrs);
+        assert(mod !is null);
+        ModuleDeclarationOpt(root, this, mod);
+        SymbolAttribute attrs;
+        DeclDefsOpt(mod, attrs);
     }
 }
 
-ModuleDeclarationOpt(ModuleData info, out Declaration moduleDecl)
+ModuleDeclarationOpt(Package root, SyntaxTree syntax_tree, Module mod)
 {
     "module" ModuleName ";"
     {
-        ModuleName(info.fqname);
-        moduleDecl = new Declaration(null, Declaration.Type.dtModule, 0, info.fqname, _ST_line_number, _ST_column_number);
-        info.decls.insert(moduleDecl);
+        string[] ident_list;
+        ModuleName(ident_list);
+
+        Package p = root;
+        if ( ident_list.length > 1 )
+        {
+            foreach ( ident; ident_list[0 .. $-1] )
+            {
+                auto nextp = cast(Package)p.findSymbol(ident);
+                if ( nextp is null ) {
+                    nextp = new Package(ident);
+                    p ~= nextp;
+                    p = nextp;
+                }
+                else
+                    p = nextp;
+            }
+        }
+        mod.syntax_tree_ = syntax_tree;
+        mod.identifier_ = ident_list[$-1];
+        mod.location_.line = _ST_line_number;
+        mod.location_.column = _ST_column_number;
+        p ~= mod;
     }
-    
-    epsilon;
+
+    epsilon
+    {
+        mod.syntax_tree_ = syntax_tree;
+        root ~= mod;
+    }
 }
 
-ModuleName(out string name)
+ModuleName(ref string[] ident_list)
 {
+    APDLocal {
+        string tmp;
+    }
+
     ModuleName "." Identifier
     {
-        ModuleName(name);
-        string tmp;
+        ModuleName(ident_list);
         Identifier(tmp);
-        name ~= "."~tmp;
+        ident_list ~= tmp;
     }
-    
+
     Identifier
-    { Identifier(name); }
+    {
+        Identifier(tmp);
+        ident_list ~= tmp;
+    }
 }
 
-DeclDefsOpt(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+DeclDefsOpt(ScopeSymbol parent, ref SymbolAttribute attrs)
 {
     DeclDefsOpt !(sync) DeclDef
     {
-        DeclDefsOpt(info, parentDecl, attrs);
-        DeclDef(info, parentDecl, attrs);
+        DeclDefsOpt(parent, attrs);
+        DeclDef(parent, attrs);
     }
-    
+
     epsilon;
 }
 
-DeclDef(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+DeclDef(ScopeSymbol parent, ref SymbolAttribute attrs, DeclDefNode decl_def_node=null)
 {
+    APDNode
+    {
+        string getDDocString()
+        {
+            // find first Terminal in the subtree by searching depth-first, left-to-right
+            Stack!(SyntaxTree)  stack;
+            stack ~= this;
+            while ( !stack.empty )
+            {
+                auto n = stack.pop;
+                if ( n.isTerminal )
+                    return n._ST_match_ws;
+                foreach_reverse ( c; n._ST_children )
+                    stack ~= c;
+            }
+            return null;
+        }
+    }
+
     StaticAssert;
 
     ConditionalDeclaration
-    { ConditionalDeclaration(info, parentDecl, attrs); }
+    { ConditionalDeclaration(parent, attrs); }
 
     Declaration
-    { Declaration(info, parentDecl, attrs); }
+    { Declaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     ImportDeclaration
-    { ImportDeclaration(info, attrs); }
+    { ImportDeclaration(parent, attrs); }
 
     AttributeSpecifier
-    { AttributeSpecifier(info, parentDecl, attrs); }
+    { AttributeSpecifier(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     EnumDeclaration
-    { EnumDeclaration(info, parentDecl, attrs); }
+    { EnumDeclaration(parent, attrs); }
 
     TemplateMixin;
 
     TemplateDeclaration
-    { TemplateDeclaration(info, parentDecl, attrs); }
+    { TemplateDeclaration(parent, attrs); }
 
     FunctionTemplateDeclaration
-    { FunctionTemplateDeclaration(info, parentDecl, attrs); }
+    { FunctionTemplateDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     ClassTemplateDeclaration
-    { ClassTemplateDeclaration(info, parentDecl, attrs); }
+    { ClassTemplateDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     InterfaceTemplateDeclaration
-    { InterfaceTemplateDeclaration(info, parentDecl, attrs); }
+    { InterfaceTemplateDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     StructTemplateDeclaration
-    { StructTemplateDeclaration(info, parentDecl, attrs); }
+    { StructTemplateDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     ClassDeclaration
-    { ClassDeclaration(info, parentDecl, attrs); }
+    { ClassDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     InterfaceDeclaration
-    { InterfaceDeclaration(info, parentDecl, attrs); }
+    { InterfaceDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     AggregateDeclaration
-    { AggregateDeclaration(info, parentDecl, attrs); }
+    { AggregateDeclaration(parent, attrs, decl_def_node is null? this : decl_def_node); }
 
     Constructor;
     Destructor;
@@ -307,20 +361,20 @@ DeclDef(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
 /**************************************************************************************************
     Conditional compilation
 **************************************************************************************************/
-ConditionalDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+ConditionalDeclaration(ScopeSymbol parent, SymbolAttribute attrs)
 {
     Condition ":";
 
     Condition
     DeclarationBlock
-    { DeclarationBlock(info, parentDecl, attrs); }
+    { DeclarationBlock(parent, attrs); }
 
     Condition
     DeclarationBlock
     "else" DeclarationBlock=ElseBlock
     {
-        DeclarationBlock(info, parentDecl, attrs);
-        ElseBlock(info, parentDecl, attrs);
+        DeclarationBlock(parent, attrs);
+        ElseBlock(parent, attrs);
     }
 }
 
@@ -333,8 +387,8 @@ Condition() no_ast
 
 VersionCondition() no_ast
 {
-	"version" "(" Integer ")";
-	"version" "(" Identifier ")";
+    "version" "(" Integer ")";
+    "version" "(" Identifier ")";
 }
 
 VersionSpecification() no_ast
@@ -371,40 +425,42 @@ StaticAssert() no_ast
 /**************************************************************************************************
     Import Declaration
 **************************************************************************************************/
-ImportDeclaration(ModuleData info, DeclAttribute attrs)
+ImportDeclaration(ScopeSymbol parent, SymbolAttribute attrs)
 {
     "import" ImportList ";"
     {
-        ImportList(info, attrs);
+        ImportList(parent, attrs);
     }
 }
 
-ImportList(ModuleData info, DeclAttribute attrs)
+ImportList(ScopeSymbol parent, SymbolAttribute attrs)
 {
     ImportList "," Import
     {
-        ImportList(info, attrs);
-        Import(info, attrs);
+        ImportList(parent, attrs);
+        Import(parent, attrs);
     }
 
     Import
-    { Import(info, attrs); }
+    { Import(parent, attrs); }
 }
 
-Import(ModuleData info, DeclAttribute attrs)
+Import(ScopeSymbol parent, SymbolAttribute attrs)
 {
+    APDLocal {
+        string[] ident_list;
+    }
+
     Identifier=ModuleAliasIdentifier "=" ModuleName ImportBindListOpt
     {
-        Import imp = new Import(attrs);
-        ModuleName(imp.module_name);
-        info.imports ~= imp;
+        ModuleName(ident_list);
+        parent ~= new Import(ident_list);
     }
 
     ModuleName ImportBindListOpt
     {
-        Import imp = new Import(attrs);
-        ModuleName(imp.module_name);
-        info.imports ~= imp;
+        ModuleName(ident_list);
+        parent ~= new Import(ident_list);
     }
 }
 
@@ -429,7 +485,7 @@ ImportBind() no_ast
 /**************************************************************************************************
     Attributes
 **************************************************************************************************/
-AttributeSpecifier(ModuleData info, Declaration parentDecl, ref DeclAttribute attr)
+AttributeSpecifier(ScopeSymbol parent, ref SymbolAttribute attr, DeclDefNode decl_def_node)
 {
     Attributes ":"
     { Attributes(attr); }
@@ -437,11 +493,11 @@ AttributeSpecifier(ModuleData info, Declaration parentDecl, ref DeclAttribute at
     Attributes DeclarationBlock
     {
         Attributes(attr);
-        DeclarationBlock(info, parentDecl, attr);
+        DeclarationBlock(parent, attr, decl_def_node);
     }
 }
 
-Attribute(ref DeclAttribute attr)
+Attribute(ref SymbolAttribute attr)
 {
     "synchronized"      { attr |= atSynchronized; }
     "deprecated"        { attr |= atDeprecated; }
@@ -455,13 +511,13 @@ Attribute(ref DeclAttribute attr)
     "abstract"          { attr |= atAbstract; }
     "auto"              { attr |= atAuto; }
     "scope"             { attr |= atScope; }
-    Constness prefer    { Constness(attr); }
+    Constness prefer;
     LinkageAttribute;
     AlignAttribute;
     Pragma;
 }
 
-Attributes(ref DeclAttribute attr)
+Attributes(ref SymbolAttribute attr)
 {
     Attributes Attribute
     { Attributes(attr); Attribute(attr); }
@@ -470,13 +526,13 @@ Attributes(ref DeclAttribute attr)
     { Attribute(attr); }
 }
 
-DeclarationBlock(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+DeclarationBlock(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node=null)
 {
     "{" DeclDefsOpt "}"
-    { DeclDefsOpt(info, parentDecl, attrs); }
+    { DeclDefsOpt(parent, attrs); }
 
     DeclDef
-    { DeclDef(info, parentDecl, attrs); }
+    { DeclDef(parent, attrs, decl_def_node); }
 }
 
 LinkageAttribute()
@@ -502,48 +558,56 @@ Pragma() no_ast
 /**************************************************************************************************
     Functions
 **************************************************************************************************/
-FunctionBody(ModuleData info, Declaration parentDecl)
+FunctionBody(FunctionDeclaration funcdecl)
 {
-	InStatement OutStatement BodyStatement
-    { BodyStatement(info, parentDecl); }
+    InStatement OutStatement BodyStatement
+    { BodyStatement(funcdecl); }
 
-	OutStatement InStatement BodyStatement
-    { BodyStatement(info, parentDecl); }
+    OutStatement InStatement BodyStatement
+    { BodyStatement(funcdecl); }
 
-	InStatement BodyStatement
-    { BodyStatement(info, parentDecl); }
+    InStatement BodyStatement
+    { BodyStatement(funcdecl); }
 
-	OutStatement BodyStatement
-    { BodyStatement(info, parentDecl); }
+    OutStatement BodyStatement
+    { BodyStatement(funcdecl); }
 
-	BlockStatement
-    { BlockStatement(info, parentDecl); }
-
-	BodyStatement
-    { BodyStatement(info, parentDecl); }
+    BodyStatement
+    { BodyStatement(funcdecl); }
 }
 
-FunctionBodyOpt(ModuleData info, Declaration parentDecl)
+FunctionBodyOpt(FunctionDeclaration funcdecl)
 {
     FunctionBody
-    { FunctionBody(info, parentDecl); }
+    { FunctionBody(funcdecl); }
 
     ";";
 }
 
 InStatement() no_ast
 {
-	"in" BlockStatement;
+    "in" BlockStatement;
 }
 
 OutStatement() no_ast
 {
-	"out" "(" Identifier ")" BlockStatement;
-	"out" BlockStatement;
+    "out" "(" Identifier ")" BlockStatement;
+    "out" BlockStatement;
 }
 
-BodyStatement(ModuleData info, Declaration parentDecl)
+BodyStatement(FunctionDeclaration funcdecl)
 {
-	"body" BlockStatement
-    { BlockStatement(info, parentDecl); }
+    "body" BlockStatement
+    {
+        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
+        auto blockscope = new ScopeSymbol(null, Location(null, _ST_line_number, _ST_column_number));
+        BlockStatement(blockscope);
+    }
+
+    BlockStatement
+    {
+        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
+        auto blockscope = new ScopeSymbol(null, Location(null, _ST_line_number, _ST_column_number));
+        BlockStatement(blockscope);
+    }
 }

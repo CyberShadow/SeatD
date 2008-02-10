@@ -1,0 +1,28 @@
+[12:47:32] <maxter> kate crashes when disabling and then re-enabling the plugin
+[12:48:13] <maxter> disable - close the dialog - open the dialog - enable - crash
+
+- form docs to 80cols
+
+- pagedown/up in search field should propagate to listview
+- add own user/directory configs?
+- kate-modelines are not optimal for include paths, because the file has to be opened in kate
+
+- list isn't cleared when switching documents (maybe don't remove, since once dirty-stuff works, it will be repopulated anyway)
+- reparse on open
+- mark module as dirty on buffer change
+- optionally auto-hide seatd sidebar for unsupported files
+- pass correct tab width to parser
+- make tree-view configurable
+
+- regex-based compiler error message parser
+
+- depending on whether the selection was done from end to start or from start to end, duplicate extends the selection or not
+- esc in list does not defocus
+- select-first does not always work correctly
+
+- add open file list to live search (jump to build.sh etc.) (integrate document list into S4K?)
+- space separated searches treats as AND "tan mat cos" -> tango.math.Math.cos
+- optionally add document changes and Kate's normal search to the history
+- command to show decl of expression in hint-popup
+- sort decl list by distance to cursor (only after substring input?)
+- tree-view browser of all packages/modules/declarations

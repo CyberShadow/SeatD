@@ -14,25 +14,25 @@ MixinDeclaration() no_ast
 /**************************************************************************************************
     Declarations
 **************************************************************************************************/
-Declaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+Declaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     TypedefAlias Declaration2
-    { Declaration2(info, parentDecl, attrs); }
+    { Declaration2(parent, attrs, decl_def_node); }
 
     TypedefAlias Attributes Declaration2
-    { Attributes(attrs); Declaration2(info, parentDecl, attrs); }
+    { Attributes(attrs); Declaration2(parent, attrs, decl_def_node); }
 
     TypedefAlias Attributes Identifier "=" AssignExpression ";"
     { Attributes(attrs); }
 
     Attributes Declaration2 force(Declaration)
-    { Attributes(attrs); Declaration2(info, parentDecl, attrs); }
+    { Attributes(attrs); Declaration2(parent, attrs, decl_def_node); }
 
     Attributes IdentifierSimpleInitializerList ";"
     { Attributes(attrs); }
 
     Declaration2
-    { Declaration2(info, parentDecl, attrs); }
+    { Declaration2(parent, attrs, decl_def_node); }
 }
 
 TypedefAlias()
@@ -42,67 +42,61 @@ TypedefAlias()
 }
 
 // TODO: prefer declaration on expressionstatement conflict
-Declaration2(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+Declaration2(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     BasicType Declarator FunctionBody
     {
-        string type;
+        Type type;
         BasicType(type);
 
         string ident;
         Declarator(type, ident);
 
-        auto decl = new Declaration(
-            parentDecl,
-            Declaration.Type.dtFunction,
-            attrs,
-            ident,
-            _ST_line_number, _ST_column_number
+        auto fd = new FunctionDeclaration(
+            type, ident,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
         );
-        decl.mangled_type = type;
-        info.decls.insert(decl);
-
-        FunctionBody(info, decl);
+        parent ~= fd;
+        FunctionBody(fd);
     }
 
     BasicType Declarators ";"
     {
-        string type;
+        Type type;
         BasicType(type);
 
-        string[]    idents;
-        Declarators(type, idents);
+        string[] identlist;
+        Declarators(type, identlist);
 
-        foreach ( id; idents )
+        foreach ( id; identlist )
         {
-            auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, id, _ST_line_number, _ST_column_number);
-            decl.mangled_type = type;
-            info.decls.insert(decl);
+            parent ~= new Declaration(
+                type, id,
+                Location(parent.findModule, _ST_line_number, _ST_column_number),
+                decl_def_node
+            );
         }
     }
 }
 
-IdentifierSimpleInitializerList(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+IdentifierSimpleInitializerList(ScopeSymbol parent, SymbolAttribute attrs)
 {
     IdentifierSimpleInitializerList "," Identifier "=" AssignExpression
     {
-        IdentifierSimpleInitializerList(info, parentDecl, attrs);
+        IdentifierSimpleInitializerList(parent, attrs);
         string name;
         Identifier(name);
-        auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
     }
 
     Identifier "=" AssignExpression
     {
         string name;
         Identifier(name);
-        auto decl = new Declaration(parentDecl, Declaration.Type.dtVariable, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
     }
 }
 
-Declarators(ref string type, ref string[] idents)
+Declarators(ref Type type, ref string[] idents)
 {
     DeclaratorInitializer
     {
@@ -120,7 +114,7 @@ Declarators(ref string type, ref string[] idents)
     }
 }
 
-DeclaratorInitializer(ref string type, out string ident)
+DeclaratorInitializer(ref Type type, out string ident)
 {
     Declarator
     { Declarator(type, ident); }
@@ -156,124 +150,141 @@ IdentifierInitializer(out string ident)
     { Identifier(ident); }
 }
 
-BasicType(out string type)
+BasicType(out Type type)
 {
     BasicTypeNoIdList
     { BasicTypeNoIdList(type); }
-    
+
     "." IdentifierList
     {
+        string[] idlist;
+        IdentifierList(idlist);
+        type = new TypeIdentifier(idlist);
     }
 
     IdentifierList
     {
+        string[] idlist;
+        IdentifierList(idlist);
+        type = new TypeIdentifier(idlist);
     }
 }
 
-BasicTypeNoIdList(out string type)
+BasicTypeNoIdList(out Type type)
 {
     "bool"
-    { type = "b"; }
+    { type = Type(TY.Tbool); }
 
     "byte"
-    { type = "g"; }
+    { type = Type(TY.Tint8); }
 
     "ubyte"
-    { type = "h"; }
+    { type = Type(TY.Tuint8); }
 
     "short"
-    { type = "s"; }
+    { type = Type(TY.Tint16); }
 
     "ushort"
-    { type = "t"; }
+    { type = Type(TY.Tuint16); }
 
     "int"
-    { type = "i"; }
+    { type = Type(TY.Tint32); }
 
     "uint"
-    { type = "k"; }
+    { type = Type(TY.Tuint32); }
 
     "long"
-    { type = "l"; }
+    { type = Type(TY.Tint64); }
 
     "ulong"
-    { type = "m"; }
+    { type = Type(TY.Tuint64); }
 
     "char"
-    { type = "a"; }
+    { type = Type(TY.Tint8); }
 
     "wchar"
-    { type = "u"; }
+    { type = Type(TY.Tint16); }
 
     "dchar"
-    { type = "w"; }
+    { type = Type(TY.Tint32); }
 
     "float"
-    { type = "f"; }
+    { type = Type(TY.Tfloat32); }
 
     "double"
-    { type = "d"; }
+    { type = Type(TY.Tfloat64); }
 
     "real"
-    { type = "e"; }
+    {
+        version(X86_64) type = Type(TY.Tfloat128);
+        version(X86)    type = Type(TY.Tfloat80);
+    }
 
     "ifloat"
-    { type = "o"; }
+    { type = Type(TY.Timaginary32); }
 
     "idouble"
-    { type = "p"; }
+    { type = Type(TY.Timaginary64); }
 
     "ireal"
-    { type = "j"; }
+    {
+        version(X86_64) type = Type(TY.Timaginary128);
+        version(X86)    type = Type(TY.Timaginary80);
+    }
 
     "cfloat"
-    { type = "q"; }
+    { type = Type(TY.Tcomplex32); }
 
     "cdouble"
-    { type = "r"; }
+    { type = Type(TY.Tcomplex64); }
 
     "creal"
-    { type = "c"; }
+    {
+        version(X86_64) type = Type(TY.Tcomplex128);
+        version(X86)    type = Type(TY.Tcomplex80);
+    }
 
     "void"
-    { type = "v"; }
-    
+    { type = Type(TY.Tvoid); }
+
     Typeof;
-    
+
     Typeof IdentifierList;
-    
-    TypeConstructor "(" Type ")";
+
+    TypeConstructor "(" TypeNT ")";
 }
 
-BasicType2(ref string type)
+BasicType2(ref Type type)
 {
     "*"
-    { type = "P"~type; }
+    { type = Type(TY.Tpointer, type); }
 
     "[" "]"
-    { type = "A"~type; }
+    { type = Type(TY.Tdynamic_array, type); }
 
     "[" Expression "]";
 
-    "[" Type "]"
+    "[" TypeNT "]"
     {
-        string key_type;
-        Type(key_type);
-        type = "H"~key_type~type;
+        Type key_type;
+        TypeNT(key_type);
+        type = new TypeAssocArray(key_type, type);
     }
-    
+
     "[" AssignExpression ".." AssignExpression=AE2 "]";
 
     "delegate" Parameters
     {
-        Parameters(type);
-        type = "D"~type~"Z";
+        Type[] type_list;
+        Parameters(type_list);
+        type = new TypeDelegate(type, type_list);
     }
-    
+
     "function" Parameters
     {
-        Parameters(type);
-        type = "F"~type~"Z";
+        Type[] type_list;
+        Parameters(type_list);
+        type = new TypeFunction(type, type_list);
     }
 }
 
@@ -283,7 +294,7 @@ TypeConstructor() no_ast
     "invariant";
 }
 
-Declarator(ref string type, out string ident)
+Declarator(ref Type type, out string ident)
 {
     BasicType2 DeclaratorOpt
     {
@@ -304,15 +315,15 @@ Declarator(ref string type, out string ident)
     }
 }
 
-DeclaratorOpt(ref string type, out string ident)
+DeclaratorOpt(ref Type type, out string ident)
 {
     Declarator
     { Declarator(type, ident); }
-    
-    epsilon prefer(Type);
+
+    epsilon prefer(TypeNT);
 }
 
-DeclaratorSuffixesOpt(ref string type)
+DeclaratorSuffixesOpt(ref Type type)
 {
     DeclaratorSuffixesOpt DeclaratorSuffix
     {
@@ -323,35 +334,41 @@ DeclaratorSuffixesOpt(ref string type)
     epsilon prefer(TypeIdent);
 }
 
-DeclaratorSuffix(ref string type)
+DeclaratorSuffix(ref Type type)
 {
     "[" "]"
-    { type = "A"~type; }
-    
+    { type = Type(TY.Tdynamic_array, type); }
+
     "[" Expression "]";
 
-    "[" Type "]"
+    "[" TypeNT "]"
     {
-        string key_type;
-        Type(key_type);
-        type = "H"~key_type~type;
+        Type key_type;
+        TypeNT(key_type);
+        type = new TypeAssocArray(key_type, type);
     }
 
     Parameters
     {
-        string params_type;
-        Parameters(params_type);
-        type = "F"~params_type~"Z"~type;
+        Type[] type_list;
+        Parameters(type_list);
+        type = new TypeFunction(type, type_list);
     }
 }
 
-IdentifierList() no_ast //prefer(PrimaryExpression)
+IdentifierList(ref string[] idlist)
 {
-    Identifier;
-    IdentifierList "." Identifier;
+    Identifier
+    { string tmp; Identifier(tmp); idlist ~= tmp; }
 
-    TemplateInstance;
-    IdentifierList "." TemplateInstance;
+    IdentifierList "." Identifier
+    { IdentifierList(idlist); string tmp; Identifier(tmp); idlist ~= tmp; }
+
+    TemplateInstance
+    { string tmp; TemplateInstance(tmp); idlist ~= tmp; }
+
+    IdentifierList "." TemplateInstance
+    { IdentifierList(idlist); string tmp; TemplateInstance(tmp); idlist ~= tmp; }
 }
 
 Typeof() no_ast
@@ -359,9 +376,9 @@ Typeof() no_ast
     "typeof" "(" Expression ")";
 }
 
-Type(out string type)
+TypeNT(out Type type)
 {
-    Constness Type;
+    Constness TypeNT;
 
     BasicType deny(regexp("[a-zA-Z_][_a-zA-Z0-9]*"))
     { BasicType(type); }
@@ -373,22 +390,22 @@ Type(out string type)
     }
 }
 
-TypeOpt(out string type)
+TypeOpt(out Type type)
 {
-    Type
-    { Type(type); }
+    TypeNT
+    { TypeNT(type); }
 
     epsilon;
 }
 
-Constness(ref DeclAttribute attr)
+Constness() no_ast
 {
-    "const"         { attr |= atConst; }
-    "final"         { attr |= atFinal; }
-    "invariant"     { attr |= atInvariant; }
+    "const";
+    "final";
+    "invariant";
 }
 
-Declarator2(ref string type)
+Declarator2(ref Type type)
 {
     BasicType2 prefer(DeclaratorOpt)
     { BasicType2(type); }
@@ -403,111 +420,92 @@ Declarator2(ref string type)
     { Declarator2(type); }
 }
 
-Parameters(ref string type)
+Parameters(ref Type[] typelist)
 {
-	"(" ")";
+    "(" ")";
 
-	"(" ParameterList ")"
-    {
-        ParameterList(type);
-    }
+    "(" ParameterList ")"
+    { ParameterList(typelist); }
 }
 
-ParameterListOpt(ref string type)
+ParameterListOpt(ref Type[] typelist)
 {
     ParameterList
-    { ParameterList(type); }
-    
+    { ParameterList(typelist); }
+
     epsilon;
 }
 
-ParameterList(ref string type)
+ParameterList(ref Type[] typelist)
 {
     Parameter
-    { Parameter(type); }
+    {
+        Type type;
+        Parameter(type);
+        typelist ~= type;
+    }
 
     Parameter "," ParameterList
     {
+        Type type;
         Parameter(type);
-        ParameterList(type);
+        typelist ~= type;
+        ParameterList(typelist);
     }
 
-    // TODO: correct mangling
     Parameter "..."
-    { Parameter(type); }
+    {
+        Type type;
+        Parameter(type);
+        typelist ~= type;
+    }
 
-    // TODO: correct mangling
-    "..."
-    { type ~= "Y"; }
+    "...";
 }
 
-Parameter(ref string type)
+Parameter(ref Type type)
 {
     Parameter2
-    {
-        Parameter2(type);
-    }
+    { Parameter2(type); }
 
     InOut Parameter2
-    {
-        Parameter2(type);
-    }
+    { Parameter2(type); }
 
     ParameterStorageClasses Parameter2
-    {
-        ParameterStorageClasses(type);
-        Parameter2(type);
-    }
+    { Parameter2(type); }
 
     InOut ParameterStorageClasses Parameter2
-    {
-        ParameterStorageClasses(type);
-        Parameter2(type);
-    }
+    { Parameter2(type); }
 }
 
-Parameter2(ref string type)
+Parameter2(ref Type type)
 {
     BasicType DeclaratorOpt
     {
-        string tmp, ident;
-        BasicType(tmp);
-        DeclaratorOpt(tmp, ident);
-        type ~= tmp;
+        BasicType(type);
+        string ident;
+        DeclaratorOpt(type, ident);
     }
 
     BasicType DeclaratorOpt "=" AssignExpression
     {
-        string tmp, ident;
-        BasicType(tmp);
-        DeclaratorOpt(tmp, ident);
-        type ~= tmp;
+        BasicType(type);
+        string ident;
+        DeclaratorOpt(type, ident);
     }
 }
 
-ParameterStorageClasses(ref string type)
+ParameterStorageClasses() no_ast
 {
-    ParameterStorageClasses ParameterStorageClass
-    {
-        ParameterStorageClasses(type);
-        ParameterStorageClass(type);
-    }
-    
-    ParameterStorageClass
-    { ParameterStorageClass(type); }
+    ParameterStorageClasses ParameterStorageClass;
+    ParameterStorageClass;
 }
 
-ParameterStorageClass(ref string type)
+ParameterStorageClass() no_ast
 {
-    "const"
-    { type ~= "x"; }
-
-    "invariant"
-    { type ~= "y"; }
-
-    "final"
-    { type ~= "x"; }
-
+    "const";
+    "invariant";
+    "final";
     "scope";
     "static";
 }
@@ -524,7 +522,7 @@ InOut() no_ast
 Initializer() no_ast
 {
     "void";
-	NonVoidInitializer;
+    NonVoidInitializer;
 }
 
 NonVoidInitializer() no_ast
@@ -536,88 +534,82 @@ NonVoidInitializer() no_ast
 
 ArrayInitializer() no_ast
 {
-	"[" "]";
-	"[" ArrayStructMemberInitializers "]";
+    "[" "]";
+    "[" ArrayStructMemberInitializers "]";
 }
 
 StructInitializer() no_ast
 {
-	"{" "}";
-	"{" ArrayStructMemberInitializers "}";
+    "{" "}";
+    "{" ArrayStructMemberInitializers "}";
 }
 
 ArrayStructMemberInitializers() no_ast
 {
-	ArrayStructMemberInitializers !(sync) "," ArrayStructMemberInitializer;
-	ArrayStructMemberInitializers !(sync) ",";
-	ArrayStructMemberInitializer;
+    ArrayStructMemberInitializers !(sync) "," ArrayStructMemberInitializer;
+    ArrayStructMemberInitializers !(sync) ",";
+    ArrayStructMemberInitializer;
 }
 
 ArrayStructMemberInitializer() no_ast
 {
-	NonVoidInitializer;
-	Identifier ":" NonVoidInitializer;
+    NonVoidInitializer;
+    Identifier ":" NonVoidInitializer;
 }
 
 
 /**************************************************************************************************
     Enums
 **************************************************************************************************/
-EnumDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+EnumDeclaration(ScopeSymbol parent, SymbolAttribute attrs)
 {
-	"enum" Identifier EnumBaseTypeOpt EnumBody
+    "enum" Identifier EnumBaseTypeOpt EnumBody
     {
         string ident;
         Identifier(ident);
-        auto decl = new Declaration(parentDecl, Declaration.Type.dtEnum, attrs, ident, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
-        
-        EnumBody(info, decl);
+
+        EnumBody(parent);
     }
 
     "enum" EnumBaseTypeOpt EnumBody
-    { EnumBody(info, parentDecl); }
+    { EnumBody(parent); }
 }
 
 EnumBaseTypeOpt() no_ast
 {
-	":" Type;
+    ":" TypeNT;
     epsilon;
 }
 
-EnumBody(ModuleData info, Declaration parent_decl)
+EnumBody(ScopeSymbol parent)
 {
-	";";
-	"{" EnumMembers "}"
-    { EnumMembers(info, parent_decl); }
+    ";";
+    "{" EnumMembers "}"
+    { EnumMembers(parent); }
 }
 
-EnumMembers(ModuleData info, Declaration parent_decl)
+EnumMembers(ScopeSymbol parent)
 {
-	EnumMembers "," EnumMember
+    EnumMembers "," EnumMember
     {
-        EnumMembers(info, parent_decl);
+        EnumMembers(parent);
         string ident;
         EnumMember(ident);
-        auto decl = new Declaration(parent_decl, Declaration.Type.dtEnum, 0, ident, _ST_children[1]._ST_line_number, _ST_children[1]._ST_column_number);
-        info.decls.insert(decl);
     }
 
     EnumMembers ","
-    { EnumMembers(info, parent_decl); }
+    { EnumMembers(parent); }
 
     EnumMember
     {
         string ident;
         EnumMember(ident);
-        auto decl = new Declaration(parent_decl, Declaration.Type.dtEnum, 0, ident, _ST_children[0]._ST_line_number, _ST_children[0]._ST_column_number);
-        info.decls.insert(decl);
     }
 }
 
 EnumMember(out string ident)
 {
-	Identifier EnumInitializerOpt
+    Identifier EnumInitializerOpt
     { Identifier(ident); }
 }
 

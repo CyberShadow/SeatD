@@ -9,22 +9,22 @@ ConditionalStatement() no_ast
     Condition Statement;
 }
 
-Statement(ModuleData info, Declaration parentDecl)
+Statement(ScopeSymbol parent)
 {
     NonEmptyStatement
-    { NonEmptyStatement(info, parentDecl); }
+    { NonEmptyStatement(parent); }
 
     BlockStatement
-    { BlockStatement(info, parentDecl); }
+    { BlockStatement(parent); }
 }
 
-StatementList(ModuleData info, Declaration parentDecl)
+StatementList(ScopeSymbol parent)
 {
     StatementList !(sync) Statement
-    { StatementList(info, parentDecl); Statement(info, parentDecl); }
+    { StatementList(parent); Statement(parent); }
 
     Statement
-    { Statement(info, parentDecl); }
+    { Statement(parent); }
 }
 
 NoScopeNonEmptyStatement() no_ast
@@ -39,19 +39,19 @@ NoScopeStatement() no_ast
     BlockStatement;
 }
 
-NonEmptyStatement(ModuleData info, Declaration parentDecl)
+NonEmptyStatement(ScopeSymbol parent)
 {
     DeclDef
     {
-        DeclAttribute attrs;
-        DeclDef(info, parentDecl, attrs);
+        SymbolAttribute attrs;
+        DeclDef(parent, attrs);
     }
     
     NonEmptyNoDeclStatement
-    { NonEmptyNoDeclStatement(info, parentDecl); }
+    { /* NonEmptyNoDeclStatement(info, parentDecl); */ }
 }
 
-NonEmptyNoDeclStatement(ModuleData info, Declaration parentDecl)
+NonEmptyNoDeclStatement(ScopeSymbol parent)
 {
     LabeledStatement;
     ExpressionStatement;
@@ -96,12 +96,12 @@ LabeledStatement() no_ast
     Identifier ":" NoScopeStatement;
 }
 
-BlockStatement(ModuleData info, Declaration parentDecl)
+BlockStatement(ScopeSymbol parent)
 {
     "{" "}";
 
     "{" StatementList "}"
-    { StatementList(info, parentDecl); }
+    { StatementList(parent); }
 }
 
 ExpressionStatement() no_ast
@@ -156,9 +156,9 @@ ForeachTypeList() no_ast
 
 ForeachType() no_ast
 {
-    "inout" Type Identifier;
-    "ref" Type Identifier;
-    Type Identifier;
+    "inout" TypeNT Identifier;
+    "ref" TypeNT Identifier;
+    TypeNT Identifier;
     "inout" Identifier;
     "ref" Identifier;
     Identifier;
@@ -212,8 +212,8 @@ GotoStatement() no_ast
 
 WithStatement() no_ast
 {
-	"with" "(" Expression ")" !(sync) ScopeStatement;
-	"with" "(" TemplateInstance ")" !(sync) ScopeStatement;
+    "with" "(" Expression ")" !(sync) ScopeStatement;
+    "with" "(" TemplateInstance ")" !(sync) ScopeStatement;
 }
 
 SynchronizedStatement() no_ast
@@ -224,53 +224,53 @@ SynchronizedStatement() no_ast
 
 TryStatement() no_ast
 {
-	"try" ScopeStatement Catches;
-	"try" ScopeStatement Catches FinallyStatement;
-	"try" ScopeStatement FinallyStatement;
+    "try" ScopeStatement Catches;
+    "try" ScopeStatement Catches FinallyStatement;
+    "try" ScopeStatement FinallyStatement;
 }
 
 Catches() no_ast
 {
-	LastCatch;
-	Catch Catches;
-	Catch;
+    LastCatch;
+    Catch Catches;
+    Catch;
 }
 
 LastCatch() no_ast
 {
-	"catch" NoScopeNonEmptyStatement;
+    "catch" NoScopeNonEmptyStatement;
 }
 
 Catch() no_ast
 {
-	"catch" "(" Parameter ")" !(sync) NoScopeNonEmptyStatement;
+    "catch" "(" Parameter ")" !(sync) NoScopeNonEmptyStatement;
 }
 
 FinallyStatement() no_ast
 {
-	"finally" NoScopeNonEmptyStatement;
+    "finally" NoScopeNonEmptyStatement;
 }
 
 ThrowStatement() no_ast
 {
-	"throw" Expression ";";
+    "throw" Expression ";";
 }
 
 ScopeGuardStatement() no_ast
 {
-	"scope" "(" Identifier ")" !(sync) Statement;
+    "scope" "(" Identifier ")" !(sync) Statement;
 }
 
 VolatileStatement() no_ast
 {
-	"volatile" Statement;
-	"volatile" ";";
+    "volatile" Statement;
+    "volatile" ";";
 }
 
 AsmStatement() no_ast
 {
-	"asm" "{" "}";
-	"asm" "{" AsmInstructionList "}";
+    "asm" "{" "}";
+    "asm" "{" AsmInstructionList "}";
 }
 
 AsmInstructionList() no_ast

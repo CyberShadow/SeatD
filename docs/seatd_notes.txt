@@ -1,0 +1,59 @@
+Symbol
+ScopeSymbol
+Module
+Package
+
+- create complete types for declarations
+- determine type of expression
+- determine top-level expression from cursor pos (instead of word under cursor)
+
+- reparse on explicit request (separate from list-shortcuts)
+- reparse on modification (how to determine modification in kate?)
+- note include path change - try to reparse empty modules on change
+
+- support ddoc comments - separate DDoc grammar
+
+- allow multiple parsers
+
+- parse in separate threads
+- abort parser
+- command to force cache flush
+- how to deal with multiple buffers' include paths (ambiguities)
+- have way to visualize running parser (sidebar icon blinking?)
+
+- function overloads not displayed
+- function not listed if statement within it is incomplete:
+    void gotoPrevious()
+    {
+        if ( 
+    }
+- recovery doesn't work as expected:
+decl1
+garbage
+decl2
+garbage
+decl3
+=> decl2 missing
+
+- have options for detail level (decls under functions, under statements, a.s.o.)
+- have a all-parsed-decl's list (how does it perform?)
+- give list of all matches (if multiple) on "goto decl"
+- start/end line for each node (find current scope node with these)
+- imports can have a parent decl
+- conditionaldecl vs. conditionalstatement
+
+- auto-completion
+- allow expression.ident in findDecl
+- consider function signature in findDeclaration
+- findDecl doesn't handle module-search correctly - might have non-module decl with same name
+
+- deal with __EOF__ 0x00 0x1A
+- deal with # line
+- uniAlphas
+- add vertical tab 0xb and form feed 0xc to whitespace
+- parsing glparser.d with recovery template takes forever
+
+- optionally display parser errors in ouput
+- cache ASG on disk
+- search for dmd/gdc, read sc.ini
+- optionally reparse on external change

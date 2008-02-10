@@ -3,98 +3,96 @@
  *  License: Artistic License 2.0, see license.txt
  */
 
-TemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+TemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs)
 {
-	"template" Identifier "(" TemplateParameterListOpt ")"
-	"{" DeclDefsOpt "}"
+    "template" Identifier "(" TemplateParameterListOpt ")"
+    "{" DeclDefsOpt "}"
     {
         string name;
         Identifier(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtTemplate, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
 
-        DeclAttribute body_attrs;
-        DeclDefsOpt(info, decl, body_attrs);
+        SymbolAttribute body_attrs;
+        DeclDefsOpt(parent, body_attrs);
     }
 }
 
 TemplateParameterListOpt() no_ast
 {
-	TemplateParameterList;
-	epsilon;
+    TemplateParameterList;
+    epsilon;
 }
 
 TemplateParameterList() no_ast
 {
-	TemplateParameterList "," TemplateParameter;
-	TemplateParameter;
+    TemplateParameterList "," TemplateParameter;
+    TemplateParameter;
 }
 
 TemplateParameter() no_ast
 {
-	TemplateAliasParameter;
-	TemplateTupleParameter;
-	TemplateValueParameter;
-	TemplateTypeParameter;
+    TemplateAliasParameter;
+    TemplateTupleParameter;
+    TemplateValueParameter;
+    TemplateTypeParameter;
 }
 
 TemplateTypeParameter() no_ast
 {
-	Identifier TemplateTypeParameterSpecializationOpt TemplateTypeParameterDefaultOpt;
+    Identifier TemplateTypeParameterSpecializationOpt TemplateTypeParameterDefaultOpt;
 }
 
 TemplateTypeParameterSpecializationOpt() no_ast
 {
-	":" Type;
+    ":" TypeNT;
     epsilon;
 }
 
 TemplateTypeParameterDefaultOpt() no_ast
 {
-	"=" Type;
+    "=" TypeNT;
     epsilon;
 }
 
 TemplateValueParameter() no_ast
 {
-	BasicType Declarator TemplateValueParameterSpecializationOpt TemplateValueParameterDefaultOpt;
+    BasicType Declarator TemplateValueParameterSpecializationOpt TemplateValueParameterDefaultOpt;
 }
 
 TemplateValueParameterSpecializationOpt() no_ast
 {
-	":" ConditionalExpression;
+    ":" ConditionalExpression;
     epsilon;
 }
 
 TemplateValueParameterDefaultOpt() no_ast
 {
-	"=" ConditionalExpression;
+    "=" ConditionalExpression;
     epsilon;
 }
 
 TemplateAliasParameter() no_ast
 {
-	"alias" Identifier TemplateAliasParameterSpecializationOpt TemplateAliasParameterDefaultOpt;
+    "alias" Identifier TemplateAliasParameterSpecializationOpt TemplateAliasParameterDefaultOpt;
 }
 
 TemplateAliasParameterSpecializationOpt() no_ast
 {
-	":" Type;
+    ":" TypeNT;
     epsilon;
 }
 
 TemplateAliasParameterDefaultOpt() no_ast
 {
-	"=" Type;
+    "=" TypeNT;
     epsilon;
 }
 
 TemplateTupleParameter() no_ast
 {
-	Identifier "...";
+    Identifier "...";
 }
 
-ClassTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+ClassTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     "class"
     Identifier "(" TemplateParameterListOpt ")"
@@ -103,15 +101,19 @@ ClassTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute 
     {
         string name;
         Identifier(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtClass, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
 
-        DeclAttribute body_attrs;
-        ClassBody(info, decl, attrs);
+        auto classdecl = new ClassDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= classdecl;
+        SymbolAttribute body_attrs;
+        ClassBody(classdecl, attrs);
     }
 }
 
-InterfaceTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+InterfaceTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     "interface"
     Identifier "(" TemplateParameterListOpt ")"
@@ -120,15 +122,19 @@ InterfaceTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttrib
     {
         string name;
         Identifier(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtInterface, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
-        
-        DeclAttribute body_attrs;
-        InterfaceBody(info, decl, attrs);
+
+        auto ifacedecl = new InterfaceDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= ifacedecl;
+        SymbolAttribute body_attrs;
+        InterfaceBody(ifacedecl, attrs);
     }
 }
 
-StructTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+StructTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     "struct"
     Identifier "(" TemplateParameterListOpt ")"
@@ -136,62 +142,78 @@ StructTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute
     {
         string name;
         Identifier(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
-        
-        DeclAttribute body_attrs;
-        StructBody(info, decl, body_attrs);
+
+        auto structdecl = new StructDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= structdecl;
+        SymbolAttribute body_attrs;
+        StructBody(structdecl, body_attrs);
     }
 }
 
-FunctionTemplateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+FunctionTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     TypeIdent "(" TemplateParameterList ")" "(" ParameterListOpt ")" FunctionBody
     {
-        string name;
-        TypeIdent(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtFunction, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
-        
-        FunctionBody(info, decl);
+        Type    type;
+        string  ident;
+        TypeIdent(type, ident);
+
+        auto fd = new FunctionDeclaration(
+            type, ident,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= fd;
+        FunctionBody(fd);
     }
 }
 
 // used to avoid a s/r conflict of Type and Declarator
-TypeIdent(out string ident)
+TypeIdent(out Type type, out string ident)
 {
     BasicType Identifier
-    { Identifier(ident); }
+    {
+        BasicType(type);
+        Identifier(ident);
+    }
 
-    Type Identifier
-    { Identifier(ident); }
+    TypeNT Identifier
+    {
+        TypeNT(type);
+        Identifier(ident);
+    }
 }
 
 /**************************************************************************************************
     Template Instances
 **************************************************************************************************/
-TemplateInstance() no_ast
+TemplateInstance(out string id)
 {
-	Identifier=TemplateIdentifer "!" "(" TemplateArgumentListOpt ")";
+    Identifier=TemplateIdentifer "!" "(" TemplateArgumentListOpt ")"
+    { TemplateIdentifer(id); }
 }
 
 TemplateArgumentListOpt() no_ast
 {
-	TemplateArgumentList;
+    TemplateArgumentList;
     epsilon;
 }
 
 TemplateArgumentList() no_ast
 {
-	TemplateArgumentList "," TemplateArgument;
+    TemplateArgumentList "," TemplateArgument;
     TemplateArgument;
 }
 
 TemplateArgument() no_ast
 {
-	Type;
-	AssignExpression;
-	Identifier=Symbol;
+    TypeNT;
+    AssignExpression;
+    Identifier=Symbol;
 }
 
 
@@ -200,11 +222,11 @@ TemplateArgument() no_ast
 **************************************************************************************************/
 TemplateMixin() no_ast
 {
-	"mixin" Identifier TemplateMixin2 IdentifierOpt ";";
+    "mixin" Identifier TemplateMixin2 IdentifierOpt ";";
 }
 
 TemplateMixin2() no_ast
 {
-	"!" "(" TemplateArgumentListOpt ")";
+    "!" "(" TemplateArgumentListOpt ")";
     epsilon;
 }

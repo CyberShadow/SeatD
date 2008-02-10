@@ -13,101 +13,38 @@ import tango.io.FileScan;
 import tango.time.StopWatch;
 import tango.core.Memory;
 
-alias char[] string;
+import seatd.parser : SyntaxTree, GLRParser, WhitespaceGrammar, MainGrammar;
+import seatd.symbol;
+import seatd.type;
+import seatd.include_path;
+import container;
+import common;
+import util;
 
-import seatd.parser;
-import seatd.module_data;
-
-//import win32.winbase;
-
-/**************************************************************************************************
-
-**************************************************************************************************/
-string getFullPath(string filename)
+void printSymbolTree(Symbol s, string indent="")
 {
-    return filename;
-/*
-	char[]	fullpath;
-	char*	filepart;
-	fullpath.length = 4096;
-	int len = GetFullPathName(
-		(filename~\0).ptr,
-		fullpath.length,
-		fullpath.ptr,
-		&filepart
-	);
-	if ( len <= 0 )
-		return null;
-	fullpath.length = len;
-
-	char[]	longfullpath;
-	longfullpath.length = 4096;
-	len = GetLongPathName(
-        (fullpath~\0).ptr,
-        longfullpath.ptr,
-        longfullpath.length
-	);
-	longfullpath.length = len;
-	return longfullpath;
-*/
-}
-
-/**************************************************************************************************
-
-**************************************************************************************************/
-ModuleData parseModule(GLRParser parser, string filename)
-{
-    SyntaxTree* root;
-    ModuleData modinfo;
-
-    auto input = cast(string)(new File(filename)).read;
-    if ( input is null )
-        return null;
-    if ( input[0 .. 4] == "Ddoc" )
-        return null;
-
-/+     PerfTimer pt;
-    pt.start;
- +/
-    try
+    auto decl = cast(Declaration)s;
+    Stdout.formatln("{} {}", indent, s.toString);
+    auto ss = cast(ScopeSymbol)s;
+    if ( ss !is null )
     {
-        bool success = parser.parse(filename, input, &root, true);
-
-//        pt.stop;
-//        writefln("OK %s seconds, %s MTicks", pt.seconds, pt.mticks);
-
-        if ( !success )
-            return null;
-
-//        root.print;
-        modinfo = new ModuleData(filename, filename, 0);
-        bool has_mod_decl;
-        root.Module(modinfo, has_mod_decl);
-    }
-    catch ( Exception e )
-    {
-        Stdout(e.toString).newline;
-    }
-
-    return modinfo;
-}
-
-void printMod(ModuleData mod)
-{
-    Stdout.format("Module name: \n", mod.fqname);
-    foreach ( imp; mod.imports )
-        Stdout.format("Import: {}\n", imp.module_name);
-    foreach ( Declaration decl; mod.decls )
-    {
-        Stdout.format("Declaration: {} {} ({}:{})", Declaration.TYPE_NAMES[decl.dtType], decl.ident, decl.line, decl.column);
-        for ( Declaration p = decl.parent; p !is null; p = p.parent )
-            Stdout.format(" {}", p.ident);
-        Stdout.newline;
+        foreach ( m; ss )
+            printSymbolTree(m, indent~"  ");
     }
 }
 
 void main(string[] args)
 {
+    string[]  include_paths;
+    while ( args.length > 1 )
+    {
+        if ( args[1][0 .. 2] == "-I" )
+            include_paths ~= args[1][2 .. $];
+        else
+            break;
+        args = args[0..1]~args[2..$];
+    }
+
     if ( args.length < 2 || !(new FilePath(args[1])).exists )
         throw new Exception("Usage: d <d files>");
 
@@ -117,14 +54,13 @@ void main(string[] args)
     foreach ( a; args[1..$] )
     {
         if ( a.length > 2 && a[1] != ':' && a[0] != '/' && a[0] != '\\' )
-            files ~= getFullPath(cwd ~ a);
+            files ~= cwd ~ a;
         else
             files ~= a;
     }
 
-//    GC.disable;
     GLRParser   w = new WhitespaceGrammar,
-                g = new MainGrammar(w);
+                g = new MainGrammar(w, 4);
 
     StopWatch sw;
     sw.start;
@@ -144,27 +80,38 @@ void main(string[] args)
         foreach ( f; scan.files )
             files ~= f.toString;
     }
+
+    auto root_package = new Package(null);
+
     while ( !files.empty )
     {
         filename = files.pop;
 
-        ModuleData mod;
 //        try
         {
             Stdout.formatln("parsing {}...", filename);
-            mod = parseModule(g, filename);
+            auto fp = new FilePath(filename);
+            SyntaxTree st = parse(g, fp, cast(string)(new File(fp)).read, true, false);
+            auto mod = new Module(fp);
+            st.seatdModule(root_package, mod);
+            auto ip = new IncludePath;
+            ip ~= include_paths;
+            ip.extract(fp, mod.fqn);
+            ip.parseImports(root_package, mod, true, true, false);
+            resolveTypeIdentifers(root_package);
         }
-  /+       catch ( Exception e )
+/+        catch ( Exception e )
         {
             //e.print;
-        }    
- +/
+        }
         if ( mod is null )
             failed ~= filename;
         else {
             ++success_count;
-//            printMod(mod);
+            printMod(mod);
         }
++/
+        printSymbolTree(root_package);
     }
 
     auto seconds = sw.stop;
@@ -173,21 +120,21 @@ void main(string[] args)
 
     foreach ( f; failed )
         Stdout.format("{}\n", f);
-    Stdout.formatln("\ntotal: {} seconds", seconds);//, pt.mticks);
+    Stdout.formatln("\ntotal: {} seconds", seconds);
 
     version(ProfileConflicts)
     {
         Stdout.format("\nmax branch stack length: {}\n", g.branch_stack_max);
-        
+
         class SortedPair
         {
             uint count, state;
-            
+
             this(uint c, uint s) {
                 count = c;
                 state = s;
             }
-            
+
             int opCmp(Object o)
             {
                 SortedPair p = cast(SortedPair)o;

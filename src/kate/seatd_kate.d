@@ -5,16 +5,15 @@
 // kate: SEATDIncludePath /usr/include/d/4.1
 module kate.seatd_kate;
 
-import abstract_plugin;
-
 import tango.stdc.stdio;
 import tango.stdc.string;
 import tango.text.convert.Layout;
 import tango.text.Util;
-
 import tango.core.Memory;
-
 import tango.io.Stdout;
+
+import abstract_plugin;
+import common;
 
 /**************************************************************************************************
 
@@ -101,18 +100,19 @@ protected:
     }
 }
 
-extern(C) void kateSetCursor(void* plugin, uint line, uint col);
-extern(C) void kateGetCursor(void* plugin, uint* line, uint* col);
-extern(C) void kateOpenFile(void* plugin, char* filepath);
-extern(C) void kateGetDocumentVariable(void* plugin, char* name, char** str, size_t* len);
-extern(C) void kateFreeString(char* str);
+extern(C):
 
-extern(C) bool rt_init( void delegate(Exception e) dg = null );
-extern(C) bool rt_term( void delegate(Exception e) dg = null );
+bool rt_init( void delegate(Exception e) dg = null );
+bool rt_term( void delegate(Exception e) dg = null );
+
+void kateSetCursor(void* plugin, uint line, uint col);
+void kateGetCursor(void* plugin, uint* line, uint* col);
+void kateOpenFile(void* plugin, char* filepath);
+void kateGetDocumentVariable(void* plugin, char* name, char** str, size_t* len);
+void kateFreeString(char* str);
 
 //=============================================================================================
 // C Exports for access by the C++ implementation of the Kate plugin interface
-extern(C):
 
 /**********************************************************************************************
 
@@ -290,6 +290,22 @@ void seatdGotoNext(void* inst)
     {
         try {
             (cast(SeatdKate)inst).gotoNext();
+        }
+        catch ( Exception e ) {
+            fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);
+        }
+    }
+}
+
+void seatdMarkModuleDirty(void* inst, char* filepath, size_t len)
+{
+    debug {
+        (cast(SeatdKate)inst).markModuleDirty(filepath[0 .. len]);
+    }
+    else
+    {
+        try {
+            (cast(SeatdKate)inst).markModuleDirty(filepath[0 .. len]);
         }
         catch ( Exception e ) {
             fprintf(stderr, "D Exception: %s\n", (e.msg~\0).ptr);

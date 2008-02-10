@@ -1,0 +1,249 @@
+/*  DDoc parser
+ *  Copyright (c) 2008 Jascha Wetzel. All rights reserved
+ *  License: Artistic License 2.0, see license.txt
+ */
+
+APDGlobal
+{
+    import tango.io.Stdout;
+    import tango.text.convert.Integer;
+    import tango.core.Exception;
+    import tango.core.Memory;
+
+    struct Section
+    {
+        static Section opCall(string n, string c)
+        {
+            Section s;
+            s.name = n;
+            s.content = c;
+            return s;
+        }
+    
+        string name;
+        string content;
+    }
+
+    Section[] parseDDoc(string input)
+    {
+        GC.disable;
+        SyntaxTree root;
+        Section[]   sections;
+            
+        if ( parse("", input, root, true) )
+            root.DDoc(sections);
+        return sections;
+    }
+    
+    void main(string[] args)
+    {
+        GC.disable;
+        SyntaxTree root;
+        string input = import("ddoc.txt");
+        try
+        {
+            auto sections = parseDDoc(input);
+            foreach ( s; sections )
+            {
+                if ( s.name is null )
+                    Stdout.formatln("Summary:\n{}", s.content);
+                else
+                    Stdout.formatln("Name: {}\nContent: {}", s.name, s.content);
+            }
+        } catch ( Exception e ) {
+            Stdout.formatln("Exception: {}", e.toString);
+        }
+    }
+}
+
+DDoc(ref Section[] sections)
+{
+    optWS BlockCommentStart Content BlockCommentEnd optWS=optWS2 |
+    optWS LineCommentStart Content optWS=optWS2
+    {
+        Content(sections);
+    }
+}
+
+BlockCommentStart()
+{
+    regexp("/\\*\\*+");
+    regexp("/\\+\\++");
+}
+
+LineCommentStart()
+{
+    regexp("///+");
+}
+
+BlockCommentEnd()
+{
+    regexp("\\**\\*/");
+    regexp("\\+*\\+/");
+}
+
+Content(ref Section[] sections) deny(WSnonNLopt)
+{
+    Content Summary
+    {
+        Content(sections);
+        Section s;
+        Summary(s.content);
+        sections ~= s;
+    }
+
+    Content NamedSection
+    {
+        Content(sections);
+        NamedSection(sections);
+    }
+
+    Content WSnonNLopt NL
+    { Content(sections); }
+
+    epsilon;
+}
+
+Summary(ref string sumstr)
+{
+    APDLocal {
+        string line;
+    }
+
+    Summaries
+    { Summaries(sumstr); }
+
+    SummaryLine
+    {
+        SummaryLine(line);
+        sumstr ~= line;
+    }
+}
+
+Summaries(ref string sumstr)
+{
+    APDLocal {
+        string line;
+    }
+
+    Summaries SummaryLine NL
+    {
+        Summaries(sumstr);
+        SummaryLine(line);
+        sumstr ~= line~"\n";
+    }
+
+    Summaries WSnonNLopt NL
+    {
+        Summaries(sumstr);
+        sumstr ~= "\n";
+    }
+
+    SummaryLine NL
+    {
+        SummaryLine(line);
+        sumstr ~= line~"\n";
+    }
+}
+
+SummaryLine(out string line)
+{
+    leadingWS SectionContentLine
+    { line = SectionContentLine_node._ST_match; }
+}
+
+NamedSection(ref Section[] sections)
+{
+    SectionHeader WSnonNLopt SectionContent
+    {
+        Section s;
+        SectionHeader(s.name);
+        SectionContent(s.content);
+        sections ~= s;
+    }
+
+    SectionHeader WSnonNLopt SummaryLine
+    {
+        Section s;
+        SectionHeader(s.name);
+        SummaryLine(s.content);
+        sections ~= s;
+    }
+}
+
+SectionContent(ref string val)
+{
+    SectionContent SummaryLine NL
+    {
+        SectionContent(val);
+        string tmp;
+        SummaryLine(tmp);
+        val ~= tmp~"\n";
+    }
+    
+    SectionContent WSnonNLopt SectionName
+    {
+        SectionContent(val);
+        val ~= SectionName_node._ST_match;
+    }
+    
+    epsilon;
+}
+
+SectionHeader(out string name)
+{
+    leadingWS SectionName
+    { name = SectionName_node._ST_match[0 .. $-1]; }
+}
+
+SectionName()
+{
+    regexp("[^: \\t\\n\\r]+:");
+}
+
+SectionContentLine()
+{
+    regexp("([^: \\t\\n\\r*+/]|(/>[^*+]))+(([ \\t*+]|([*+]>[^/]))+([^\\n\\r*+]|([*+]>[^/]))*|([^:\\n\\r*+]|([*+]>[^/]))*)");
+}
+
+leadingWS()
+{
+    WSnonNLopt;
+    WSnonNL StarsPluses WSnonNLopt;
+    StarsPluses WSnonNLopt;
+}
+
+StarsPluses()
+{
+    regexp("[*+]+");
+}
+
+WSnonNLopt() prefer(NamedSection)
+{
+    WSnonNL;
+    epsilon;
+}
+
+WSnonNL()
+{
+    regexp("[ \\t]+");
+}
+
+optWS()
+{
+    WS;
+    epsilon;
+}
+
+WS()
+{
+    WS WSnonNL;
+    WS NL;
+    WSnonNL;
+    NL;
+}
+
+NL()
+{
+    regexp("[\\n\\r]");
+}

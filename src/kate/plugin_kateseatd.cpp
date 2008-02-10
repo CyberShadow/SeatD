@@ -37,6 +37,7 @@ void KatePluginSeatd::addView(Kate::MainWindow *win)
 {
     KatePluginSeatdView *view = new KatePluginSeatdView(seatd_, win);
     views_.append(view);
+    connect(application()->documentManager(), SIGNAL(documentChanged()), view, SLOT(documentChanged()));
 }   
 
 //=================================================================================================
@@ -169,6 +170,12 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w)
         SLOT( gotoNext() ), actionCollection(),
         "view_goto_next"
     );
+             
+    new KAction(
+        i18n("Duplicate Selection or Line"), 0, this,
+        SLOT( duplicateSelection() ), actionCollection(),
+        "edit_duplicate"
+    );
 
     setInstance(new KInstance("kate"));
     setXMLFile("plugins/kateseatd/ui.rc");
@@ -197,7 +204,6 @@ KatePluginSeatdView::KatePluginSeatdView(void* seatd, Kate::MainWindow *w)
     connect(listview_, SIGNAL(executed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
     connect(listview_, SIGNAL(returnPressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
     connect(listview_, SIGNAL(spacePressed(QListViewItem *)), this, SLOT(gotoSymbol(QListViewItem *)));
-    connect(win->viewManager(), SIGNAL(viewChanged()), this, SLOT(viewChanged()));
 }
 
 //=================================================================================================
@@ -205,6 +211,43 @@ KatePluginSeatdView::~KatePluginSeatdView()
 {
     win->guiFactory()->removeClient(this);
     delete dock_;
+}
+
+//=================================================================================================
+void KatePluginSeatdView::documentModified()
+{
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+    printf("documentChanged %s\n", (const char*)doc->url().path());
+    seatdMarkModuleDirty(seatd_, (const char*)doc->url().path(), doc->url().path().length());
+}
+
+//=================================================================================================
+void KatePluginSeatdView::duplicateSelection()
+{
+    Kate::View* view = win->viewManager()->activeView();
+    if ( !view )
+        return;
+    Kate::Document* doc = view->getDoc();
+    if ( !doc )
+        return;
+
+    unsigned int line, col;
+    view->cursorPositionReal(&line, &col);
+    // TODO: how to insert text without moving the cursor? messes with undo...
+    if ( doc->hasSelection() ) {
+        QString text = doc->selection();
+        doc->insertText(line, col, text);
+    }
+    else {
+        QString text = doc->textLine(line);
+        doc->insertLine(line, text);
+    }
+    view->setCursorPositionReal(line, col);
 }
 
 //=================================================================================================
@@ -222,7 +265,7 @@ void KatePluginSeatdView::searchSubmit()
 }
 
 //=================================================================================================
-void KatePluginSeatdView::viewChanged()
+void KatePluginSeatdView::documentChanged()
 {
     Kate::View* view = win->viewManager()->activeView();
     if ( !view )
@@ -231,7 +274,8 @@ void KatePluginSeatdView::viewChanged()
     if ( !doc )
         return;
     seatdSetBufferFile(seatd_, (const char*)doc->url().path(), doc->url().path().length());
-
+    listview_->clear();
+/*
     switch ( list_type_ )
     {
         default:
@@ -242,6 +286,7 @@ void KatePluginSeatdView::viewChanged()
             listModules(false);
             break;
     }
+*/
 }
 
 //=================================================================================================

@@ -7,5 +7,9 @@
         <Action name="view_list_declarations" />
         <Action name="view_goto_declaration" />
     </Menu>
+    <Menu name="edit"><Text>&amp;Edit</Text>
+        <Separator />
+        <Action name="edit_duplicate" />
+    </Menu>
 </MenuBar>
 </kpartplugin>

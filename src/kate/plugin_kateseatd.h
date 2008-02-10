@@ -53,7 +53,6 @@ public:
     QString getItemFQN(QListViewItem* item);
 
 public slots:
-    void viewChanged();
     void listModules(bool manual_invoke=true);
     void listDeclarations(bool manual_invoke=true);
     void gotoSymbol(QListViewItem *);
@@ -61,6 +60,9 @@ public slots:
     void gotoDeclaration();
     void gotoPrevious();
     void gotoNext();
+    void duplicateSelection();
+    void documentChanged();
+    void documentModified();
 
 private:
     QWidget*            dock_;
@@ -103,8 +105,6 @@ public:
     void openFile(const char* filepath);
     void getDocumentVariable(const char* name, const char** str, size_t* len);
 
-public slots:
-
 private:
     void*   seatd_;
 
@@ -127,6 +127,7 @@ extern "C"
     void seatdListDeclarations(void* inst, const char* text, size_t len, const char*** entries, size_t* count);
     void seatdListModules(void* inst, const char* text, size_t len, const char*** entries, size_t* count);
     void seatdFreeList(const char** entries);
+    void seatdMarkModuleDirty(void* inst, const char* filepath, size_t len);
 }
 
 static const char* const class_xpm[] = {

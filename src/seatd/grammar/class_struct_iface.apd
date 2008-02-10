@@ -6,17 +6,22 @@
 /**************************************************************************************************
     Class Declaration
 **************************************************************************************************/
-ClassDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+ClassDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
     "class" Identifier BaseClassListOpt ClassBody
     {
         string name;
         Identifier(name);
-        Declaration classDecl = new Declaration(parentDecl, Declaration.Type.dtClass, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(classDecl);
 
-        DeclAttribute body_attrs;
-        ClassBody(info, classDecl, body_attrs);
+        auto classdecl = new ClassDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= classdecl;
+
+        SymbolAttribute body_attrs;
+        ClassBody(classdecl, body_attrs);
     }
 }
 
@@ -52,35 +57,31 @@ Protection() no_ast
     "export";
 }
 
-ClassBody(ModuleData info, Declaration classDecl, DeclAttribute attrs)
+ClassBody(ScopeSymbol parent, SymbolAttribute attrs)
 {
     "{" "}";
 
     "{" ClassBodyDeclarations "}"
-    {
-        ClassBodyDeclarations(info, classDecl, attrs);
-    }
+    { ClassBodyDeclarations(parent, attrs); }
 }
 
-ClassBodyDeclarations(ModuleData info, Declaration classDecl, ref DeclAttribute attrs)
+ClassBodyDeclarations(ScopeSymbol parent, ref SymbolAttribute attrs)
 {
     ClassBodyDeclarations !(sync) ClassBodyDeclaration
     {
-        ClassBodyDeclarations(info, classDecl, attrs);
-        ClassBodyDeclaration(info, classDecl, attrs);
+        ClassBodyDeclarations(parent, attrs);
+        ClassBodyDeclaration(parent, attrs);
     }
 
     ClassBodyDeclaration
-    {
-        ClassBodyDeclaration(info, classDecl, attrs);
-    }
+    { ClassBodyDeclaration(parent, attrs); }
 }
 
-ClassBodyDeclaration(ModuleData info, Declaration classDecl, ref DeclAttribute attrs)
+ClassBodyDeclaration(ScopeSymbol parent, ref SymbolAttribute attrs)
 {
     DeclDef
-    { DeclDef(info, classDecl, attrs); }
-    
+    { DeclDef(parent, attrs); }
+
     ClassAllocator;
     ClassDeallocator;
 }
@@ -97,49 +98,53 @@ Destructor()
 
 StaticConstructor() no_ast
 {
-	"static" "this" "(" ")" FunctionBody;
+    "static" "this" "(" ")" FunctionBody;
 }
 
 StaticDestructor()
 {
-	"static" "~" "this" "(" ")" FunctionBody;
+    "static" "~" "this" "(" ")" FunctionBody;
 }
 
 Invariant()
 {
-	"invariant" BlockStatement;
-	"invariant" "(" ")" BlockStatement;
+    "invariant" BlockStatement;
+    "invariant" "(" ")" BlockStatement;
 }
 
 UnitTest()
 {
-	"unittest" FunctionBody;
+    "unittest" FunctionBody;
 }
 
 ClassAllocator()
 {
-	"new" Parameters FunctionBody;
+    "new" Parameters FunctionBody;
 }
 
 ClassDeallocator() no_ast
 {
-	"delete" Parameters FunctionBody;
+    "delete" Parameters FunctionBody;
 }
 
 /**************************************************************************************************
     Interfaces
 **************************************************************************************************/
-InterfaceDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+InterfaceDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
-	"interface" Identifier SuperInterfaceListOpt InterfaceBody
+    "interface" Identifier SuperInterfaceListOpt InterfaceBody
     {
         string name;
         Identifier(name);
-        Declaration decl = new Declaration(parentDecl, Declaration.Type.dtInterface, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(decl);
-        
-        DeclAttribute body_attrs;
-        InterfaceBody(info, decl, body_attrs);
+
+        auto ifacedecl = new InterfaceDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= ifacedecl;
+        SymbolAttribute body_attrs;
+        InterfaceBody(ifacedecl, body_attrs);
     }
 }
 
@@ -151,8 +156,8 @@ SuperInterfaceListOpt() no_ast
 
 SuperInterfaces() no_ast
 {
-	SuperInterfaces "," SuperInterface;
-	SuperInterface;
+    SuperInterfaces "," SuperInterface;
+    SuperInterface;
 }
 
 SuperInterface() no_ast
@@ -161,97 +166,89 @@ SuperInterface() no_ast
     IdentifierList;
 }
 
-InterfaceBody(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+InterfaceBody(ScopeSymbol parent, SymbolAttribute attrs)
 {
-	"{" DeclDefsOpt "}"
-    { DeclDefsOpt(info, parentDecl, attrs); }
+    "{" DeclDefsOpt "}"
+    { DeclDefsOpt(parent, attrs); }
 }
 
 /**************************************************************************************************
     Aggregates structs/unions
 **************************************************************************************************/
-AggregateDeclaration(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+AggregateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
-	Tag IdentifierOpt StructBody
+    Tag IdentifierOpt StructBody
     {
         string tag;
         Tag(tag);
         string name;
         IdentifierOpt(name);
 
-        Declaration structDecl;
-        if ( tag == "struct" )
-            structDecl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
-        else
-            structDecl = new Declaration(parentDecl, Declaration.Type.dtUnion, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(structDecl);
-
-        DeclAttribute body_attrs;
-        StructBody(info, structDecl, body_attrs);
+        auto structdecl = new StructDeclaration(
+            name,
+            Location(parent.findModule, _ST_line_number, _ST_column_number),
+            decl_def_node
+        );
+        parent ~= structdecl;
+        SymbolAttribute body_attrs;
+        StructBody(structdecl, body_attrs);
     }
 
-	Tag IdentifierOpt ";"
+    Tag IdentifierOpt ";"
     {
         string tag;
         Tag(tag);
         string name;
         IdentifierOpt(name);
-
-        Declaration structDecl;
-        if ( tag == "struct" )
-            structDecl = new Declaration(parentDecl, Declaration.Type.dtStruct, attrs, name, _ST_line_number, _ST_column_number);
-        else
-            structDecl = new Declaration(parentDecl, Declaration.Type.dtUnion, attrs, name, _ST_line_number, _ST_column_number);
-        info.decls.insert(structDecl);
     }
 }
 
 Tag(out string value) prefer(regexp("[a-zA-Z_][_a-zA-Z0-9]*"))
 {
-	"struct" { value = "struct"; }
-	"union" { value = "union"; }
+    "struct" { value = "struct"; }
+    "union" { value = "union"; }
 }
 
-StructBody(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+StructBody(ScopeSymbol parent, SymbolAttribute attrs)
 {
-	"{" "}";
+    "{" "}";
 
-	"{" "}" ";";
+    "{" "}" ";";
 
-	"{" StructBodyDeclarations "}"
-    { StructBodyDeclarations(info, parentDecl, attrs); }
+    "{" StructBodyDeclarations "}"
+    { StructBodyDeclarations(parent, attrs); }
 
-	"{" StructBodyDeclarations "}" ";"
-    { StructBodyDeclarations(info, parentDecl, attrs); }
+    "{" StructBodyDeclarations "}" ";"
+    { StructBodyDeclarations(parent, attrs); }
 }
 
-StructBodyDeclarations(ModuleData info, Declaration parentDecl, DeclAttribute attrs)
+StructBodyDeclarations(ScopeSymbol parent, SymbolAttribute attrs)
 {
-	StructBodyDeclarations StructBodyDeclaration
+    StructBodyDeclarations StructBodyDeclaration
     {
-        StructBodyDeclarations(info, parentDecl, attrs);
-        StructBodyDeclaration(info, parentDecl, attrs);
+        StructBodyDeclarations(parent, attrs);
+        StructBodyDeclaration(parent, attrs);
     }
 
     StructBodyDeclaration
-    { StructBodyDeclaration(info, parentDecl, attrs); }
+    { StructBodyDeclaration(parent, attrs); }
 }
 
-StructBodyDeclaration(ModuleData info, Declaration parentDecl, ref DeclAttribute attrs)
+StructBodyDeclaration(ScopeSymbol parent, ref SymbolAttribute attrs)
 {
     DeclDef
-    { DeclDef(info, parentDecl, attrs); }
+    { DeclDef(parent, attrs); }
 
-	StructAllocator;
-	StructDeallocator;
+    StructAllocator;
+    StructDeallocator;
 }
 
 StructAllocator() no_ast
 {
-	ClassAllocator;
+    ClassAllocator;
 }
 
 StructDeallocator() no_ast
 {
-	ClassDeallocator;
+    ClassDeallocator;
 }

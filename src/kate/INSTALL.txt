@@ -15,8 +15,8 @@ Building and installing from source
 Prerequisites
 -------------------------------------------------------------------------------
 
-- Kate 3.5 (newer version might also work)
-- KDE3 devel package including tools (usually, installing all dependencies of your kde-devel package should work)
+- Kate 2.5.8 (newer version might also work)
+- KDE 3.5 devel package including tools (usually, installing all dependencies of your kde-devel package should work)
 - libtool
 - GDC
 - Tango 0.99.4 sources

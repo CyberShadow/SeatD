@@ -15,14 +15,10 @@ import tango.text.Util;
 import tango.text.convert.Layout;
 
 import util;
-import seatd.module_data;
-import seatd.package_data;
 import container;
+import common;
 
 import tango.stdc.stdio;
-
-alias char[] string;
-alias dchar[] dstring;
 
 struct Location
 {
@@ -59,7 +55,7 @@ public:
         Usually done using the file extension or editor settings.
     **********************************************************************************************/
     bool isParsableBuffer();
-    
+
     /**********************************************************************************************
         Get the current position of the cursor.
     **********************************************************************************************/
@@ -90,7 +86,7 @@ public:
     **********************************************************************************************/
     void setActiveFilepath(string filename)
     {
-        active_filepath_ = getFullPath(filename);
+        active_filepath_ = filename;
     }
 
     /***********************************************************************************************
@@ -102,7 +98,7 @@ public:
 
         string[] list;
         list_decls_ = null;
-        
+
         if ( modinfo !is null )
         {
             foreach ( Declaration decl; modinfo.decls )
@@ -115,7 +111,7 @@ public:
                 list_decls_[ident] = decl;
             }
         }
-        
+
         return list;
     }
 
@@ -128,7 +124,8 @@ public:
 
         string[] list;
         list_modules_ = null;
-        
+        list_modules_by_filepath_ = null;
+
         Stack!(PackageData) stack;
         stack ~= root_package_;
         while ( !stack.empty )
@@ -138,12 +135,21 @@ public:
             {
                 list ~= mod.fqname;
                 list_modules_[mod.fqname] = mod;
+                list_modules_by_filepath_[mod.filepath.toString] = mod;
             }
             foreach ( p; pak.packages )
                 stack ~= p;
         }
-        
+
         return list;
+    }
+
+    // TODO: implement
+    void markModuleDirty(string filepath)
+    {
+        auto mod = filepath in list_modules_by_filepath_;
+        if ( mod !is null )
+            mod.externally_modified_ = true;
     }
 
 
@@ -288,6 +294,7 @@ public:
             try
             {
                 modinfo2 = parse(fname, cast(string)(new File(fname)).read);
+                doSemantics(root_package_, modinfo2, SemanticsPass.collect);
                 if ( modinfo2 !is null ) {
                     root_package_ ~= modinfo2;
                     parseImports(modinfo2, include_paths);
@@ -308,10 +315,11 @@ public:
     {
         if ( !isParsableBuffer )
             return null;
-        
+
         ModuleData modinfo;
 
         modinfo = parse(active_filepath_, text);
+        doSemantics(root_package_, modinfo, SemanticsPass.collect);
         if ( modinfo is null )
             log("parse error");
         else {
@@ -334,12 +342,13 @@ public:
             filepaths ~= scan.sweep(ip, ".d").files;
             filepaths ~= scan.sweep(ip, ".di").files;
         }
-        
+
         foreach ( filepath; filepaths )
         {
             try
             {
                 auto mod = parse(filepath.toString, cast(string)(new File(filepath)).read);
+                doSemantics(root_package_, mod, SemanticsPass.collect);
                 if ( mod !is null )
                     root_package_ ~= mod;
             }
@@ -370,7 +379,7 @@ public:
         }
 
 //        parseIncludePath(paths);
-        
+
         buffer_include_paths_[active_filepath_] = paths;
         return paths;
     }
@@ -390,7 +399,7 @@ public:
             if ( loc.filepath == active_filepath_ && loc.line == line )
                 return;
         }
-        
+
         debug Stdout.formatln("Saving {}({}:{}) {}", active_filepath_, line, col, next_history_index_);
         history_[next_history_index_] = Location(active_filepath_, line, col);
         history_[next_history_index_++] = Location(active_filepath_, line, col);
@@ -403,7 +412,8 @@ protected:
     string[][string]    buffer_include_paths_;
 
     Declaration[string] list_decls_;
-    ModuleData[string]  list_modules_;
+    ModuleData[string]  list_modules_,
+                        list_modules_by_filepath_;
 
     PackageData         root_package_;
 
