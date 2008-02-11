@@ -1,31 +1,26 @@
-Symbol
-ScopeSymbol
-Module
-Package
+- add apaged pass(ident,ident2,...) feature, then do symStmt pass to have local decls
 
-- create complete types for declarations
+- add c'tors/d'tors to symtab
+
 - determine type of expression
 - determine top-level expression from cursor pos (instead of word under cursor)
 
 - reparse on explicit request (separate from list-shortcuts)
 - reparse on modification (how to determine modification in kate?)
-- note include path change - try to reparse empty modules on change
+- notice include path change - try to reparse empty modules on change
 
-- support ddoc comments - separate DDoc grammar
-
-- allow multiple parsers
+- support ddoc comments
 
 - parse in separate threads
 - abort parser
 - command to force cache flush
 - how to deal with multiple buffers' include paths (ambiguities)
-- have way to visualize running parser (sidebar icon blinking?)
 
 - function overloads not displayed
 - function not listed if statement within it is incomplete:
     void gotoPrevious()
     {
-        if ( 
+        if (
     }
 - recovery doesn't work as expected:
 decl1
@@ -34,6 +29,8 @@ decl2
 garbage
 decl3
 => decl2 missing
+
+- allow multiple parsers
 
 - have options for detail level (decls under functions, under statements, a.s.o.)
 - have a all-parsed-decl's list (how does it perform?)
@@ -54,6 +51,6 @@ decl3
 - parsing glparser.d with recovery template takes forever
 
 - optionally display parser errors in ouput
-- cache ASG on disk
+- cache SymbolTable on disk
 - search for dmd/gdc, read sc.ini
 - optionally reparse on external change

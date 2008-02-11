@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 module abstract_plugin;
@@ -14,13 +14,14 @@ import tango.text.Ascii;
 import tango.text.Util;
 import tango.text.convert.Layout;
 
+import seatd.symbol;
 import util;
 import container;
 import common;
 
 import tango.stdc.stdio;
 
-struct Location
+struct HistoryLocation
 {
     string  filepath;
     uint    line,
@@ -39,7 +40,7 @@ abstract class AbstractPlugin
 public:
     this()
     {
-        root_package_ = new PackageData;
+        root_package_ = new Package(null);
     }
 
     //=============================================================================================
@@ -395,14 +396,14 @@ public:
             history_.length = history_.length*2+1;
         if ( next_history_index_ > 0 )
         {
-            Location loc = history_[next_history_index_-1];
+            HistoryLocation loc = history_[next_history_index_-1];
             if ( loc.filepath == active_filepath_ && loc.line == line )
                 return;
         }
 
         debug Stdout.formatln("Saving {}({}:{}) {}", active_filepath_, line, col, next_history_index_);
-        history_[next_history_index_] = Location(active_filepath_, line, col);
-        history_[next_history_index_++] = Location(active_filepath_, line, col);
+        history_[next_history_index_] = HistoryLocation(active_filepath_, line, col);
+        history_[next_history_index_++] = HistoryLocation(active_filepath_, line, col);
         history_top_ = next_history_index_;
     }
 
@@ -412,12 +413,12 @@ protected:
     string[][string]    buffer_include_paths_;
 
     Declaration[string] list_decls_;
-    ModuleData[string]  list_modules_,
+    Module[string]      list_modules_,
                         list_modules_by_filepath_;
 
-    PackageData         root_package_;
+    Package             root_package_;
 
-    Location[]          history_;
+    HistoryLocation[]   history_;
     uint                next_history_index_,
                         history_top_;
 }

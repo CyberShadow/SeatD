@@ -1,7 +1,9 @@
-/*  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+/*  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 module container;
+
+import common;
 
 /*******************************************************************************
     Double linked list
@@ -110,7 +112,7 @@ class List(T)
             e.next.prev = e.prev;
     }
 
-    int opApply(int delegate(inout T) dg)
+    int opApply(int delegate(ref T) dg)
     {
         for ( Element e=head; e !is null; e = e.next )
         {
@@ -121,7 +123,7 @@ class List(T)
         return 0;
     }
 
-    int opApplyReverse(int delegate(inout T) dg)
+    int opApplyReverse(int delegate(ref T) dg)
     {
         for ( Element e=tail; e !is null; e = e.prev )
         {
@@ -425,16 +427,16 @@ alias Chord!(char) Chordc;
 /**************************************************************************************************
     AVL Tree that balances itself after each insertion
 **************************************************************************************************/
-class AVLTree(T)
+class AVLTree(T, alias cmp)
 {
-    alias AVLNode!(T) node_t;
+    alias AVLNode!(T,cmp) node_t;
     node_t  root;
     bool    rebalance;
 
     bool insert(T v)
     {
         if ( root is null ) {
-            root = new AVLNode!(T)(v);
+            root = new node_t(v);
             return true;
         }
         else {
@@ -442,10 +444,79 @@ class AVLTree(T)
             return insert(root, v);
         }
     }
+    alias insert opCatAssign;
 
     bool find(VT,RT)(VT v, out RT res)
     {
-        return root.find(v, res);
+        static if ( !is(RT == node_t) && !is(RT == T) )
+            static assert(0, "invalid result type for tree search");
+
+        if ( root is null )
+            return false;
+
+        auto n = root;
+        while ( n !is null )
+        {
+            if ( cmp(v, n.value) )
+            {
+                if ( n.left is null )
+                    return false;
+                n = n.left;
+            }
+            else if ( cmp(n.value, v) )
+            {
+                if ( n.right is null )
+                    return false;
+                n = n.right;
+            }
+            else
+                break;
+        }
+        static if ( is(RT == node_t) )
+            res = n;
+        static if ( is(RT == T) )
+            res = n.value;
+        return true;
+    }
+
+    bool findLE(VT,RT)(VT v, out RT res)
+    {
+        static if ( !is(RT == node_t) && !is(RT == T) )
+            static assert(0, "invalid result type for tree search");
+
+        if ( root is null )
+            return false;
+
+        bool ret = false;
+        auto n = root;
+        while ( n !is null )
+        {
+            if ( cmp(v, n.value) )
+            {
+                if ( n.left is null )
+                {
+                    while ( n !is root && cmp(v, n.value) )
+                        n = n.parent;
+                    break;
+                }
+                n = n.left;
+            }
+            else if ( cmp(n.value, v) )
+            {
+                if ( n.right is null )
+                    break;
+                n = n.right;
+            }
+            else {
+                ret = true;
+                break;
+            }
+        }
+        static if ( is(RT == node_t) )
+            res = n;
+        static if ( is(RT == T) )
+            res = n.value;
+        return ret;
     }
 
     int opApply(RT)(int delegate(ref RT v) proc)
@@ -486,7 +557,7 @@ class AVLTree(T)
 
         with ( n )
         {
-            if ( v < value )
+            if ( cmp(v, value) )
             {
                 if ( left is null )
                 {
@@ -498,7 +569,7 @@ class AVLTree(T)
                 else if ( !insert(left, v) )
                     return false;
             }
-            else if ( v > value )
+            else if ( cmp(value, v) )
             {
                 if ( right is null )
                 {
@@ -596,9 +667,25 @@ class AVLTree(T)
     }
 }
 
-class AVLNode(T)
+template AVLTree(T, string cmp)
 {
-    alias AVLNode!(T) node_t;
+    bool cmpFunc(T a, T b)
+    { return mixin(cmp); }
+
+    alias AVLTree!(T,cmpFunc) AVLTree;
+}
+
+template AVLTree(T)
+{
+    bool cmpFunc(T1,T2)(T1 a, T2 b)
+    { return a < b; }
+
+    alias AVLTree!(T,cmpFunc) AVLTree;
+}
+
+class AVLNode(T, alias cmp)
+{
+    alias AVLNode!(T,cmp) node_t;
     node_t  parent, left, right;
     byte    balance;
 
@@ -613,7 +700,7 @@ class AVLNode(T)
     int traverseDepthLeft(RT)(int delegate(ref RT v) proc)
     {
         int ret;
-        static if ( is(RT == AVLNode!(T)) )
+        static if ( is(RT == node_t) )
         {
             ret = proc(this);
             if ( ret )
@@ -625,15 +712,17 @@ class AVLNode(T)
             if ( ret )
                 return ret;
         }
-        static if ( !is(RT == AVLNode!(T)) && !is(RT == T) )
+        static if ( !is(RT == node_t) && !is(RT == T) )
             static assert(0, "invalid result type for tree traversal");
 
-        if ( left !is null ) {
+        if ( left !is null )
+        {
             ret = left.traverseDepthLeft(proc);
             if ( ret )
                 return ret;
         }
-        if ( right !is null ) {
+        if ( right !is null )
+        {
             ret = right.traverseDepthLeft(proc);
             if ( ret )
                 return ret;
@@ -641,70 +730,44 @@ class AVLNode(T)
         return 0;
     }
 
-    bool findNext(RT)(inout RT res)
+    bool findNext(RT)(ref RT res)
     {
         node_t n;
         if ( right is null )
         {
-            bool found=false;
             for ( n = this; n.parent !is null; n = n.parent )
             {
                 if ( n.parent.left is n )
                 {
                     static if ( is(T : Object) )
-                        assert(n.parent.value > n.value, "\n"~n.parent.value.toString~"  parent of  "~n.value.toString~"\n");
-                    assert(n.parent.value >  n.value);
+                        assert(cmp(n.value, n.parent.value), "\n"~n.parent.value.toString~"  parent of  "~n.value.toString~"\n");
+                    assert(cmp(n.value, n.parent.value));
                     n = n.parent;
-                    found = true;
-                    break;
+                    goto Lfound;
                 }
-                assert(n.parent.value <= n.value);
+                assert(!cmp(n.value, n.parent.value));
             }
-            if ( !found )
-                return false;
+            return false;
         }
         else
         {
-            assert(right.value >= value);
+            assert(!cmp(right.value, value));
             n = right;
             while ( n.left !is null )
             {
                 static if ( is(T : Object) )
-                    assert(n.left.value < n.value, "\n"~n.left.value.toString~"\tleft of\t"~n.value.toString~"\n");
-                assert(n.left.value < n.value);
+                    assert(cmp(n.left.value, n.value), "\n"~n.left.value.toString~"\tleft of\t"~n.value.toString~"\n");
+                assert(cmp(n.left.value, n.value));
                 n = n.left;
             }
         }
-
-        static if ( is(RT == AVLNode!(T)) )
+    Lfound:
+        static if ( is(RT == node_t) )
             res = n;
         static if ( is(RT == T) )
             res = n.value;
-        static if ( !is(RT == AVLNode!(T)) && !is(RT == T) )
+        static if ( !is(RT == node_t) && !is(RT == T) )
             static assert(0, "invalid result type for next node search");
-        return true;
-    }
-
-    bool find(VT,RT)(VT v, inout RT res)
-    {
-        if ( value > v )
-        {
-            if ( left !is null )
-                return left.find(v, res);
-            return false;
-        }
-        if ( value < v )
-        {
-            if ( right !is null )
-                return right.find(v, res);
-            return false;
-        }
-        static if ( is(RT == AVLNode!(T)) )
-            res = this;
-        static if ( is(RT == T) )
-            res = value;
-        static if ( !is(RT == AVLNode!(T)) && !is(RT == T) )
-            static assert(0, "invalid result type for tree search");
         return true;
     }
 }

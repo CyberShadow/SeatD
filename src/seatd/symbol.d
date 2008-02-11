@@ -9,6 +9,7 @@ import tango.io.FilePath;
 import tango.text.convert.Integer;
 import tango.text.Util;
 
+public import seatd.common;
 import seatd.type;
 import seatd.parser : SyntaxTree, DeclDefNode = _ST_DeclDef;
 import common;
@@ -55,12 +56,75 @@ struct Location
         return loc;
     }
 
+    int opCmp(Location loc)
+    {
+        if ( line == loc.line )
+            return column - loc.column;
+        return line - loc.line;
+    }
+
     string toString()
     {
         if ( mod is null )
             return "unknown module("~.toString(line)~":"~.toString(column)~")";
         return mod.toString~"("~.toString(line)~":"~.toString(column)~")";
     }
+}
+
+class LocationTree
+{
+    alias AVLTree!(Symbol,"a.location_ < b.location_").AVLTree loctree_t;
+
+    struct ModuleLocation
+    {
+        Module      mod;
+        loctree_t   loctree;
+    }
+
+    alias AVLTree!(
+        ModuleLocation,
+        "a.mod is null ? true : ( b.mod is null ? false : (a.mod.fqnString < b.mod.fqnString) )"
+    ).AVLTree modtree_t;
+
+    this()
+    {
+        modtree_ = new modtree_t;
+    }
+
+    bool insert(Module m, Symbol s)
+    {
+        return insert(m).insert(s);
+    }
+
+    loctree_t insert(Module m)
+    {
+        ModuleLocation ml;
+        ml.mod = m;
+        if ( !modtree_.find(ml, ml) ) {
+            ml.mod = m;
+            ml.loctree = new loctree_t;
+            modtree_ ~= ml;
+        }
+        return ml.loctree;
+    }
+
+    Symbol find(Location loc)
+    {
+        if ( loc.mod is null )
+            return null;
+        ModuleLocation ml;
+        ml.mod = loc.mod;
+        if ( !modtree_.find(ml, ml) )
+            return null;
+        Stdout.formatln("found {}", ml.mod.toString);
+        Symbol  sym = new Symbol(null, loc),
+                sym2;
+        ml.loctree.findLE(sym, sym2);
+        Stdout("finished search").newline;
+        return sym2;
+    }
+
+    modtree_t modtree_;
 }
 
 /**************************************************************************************************
@@ -98,6 +162,8 @@ class Symbol
     string          identifier_;
     SymbolAttribute attribute_;
     Location        location_;
+    string          fqn_string_;
+    string[]        fqn_;
 
     protected this(string ident)
     {
@@ -139,14 +205,16 @@ class Symbol
     **********************************************************************************************/
     string fqnString()
     {
-        string s;
-        auto a = fqn();
-        if ( a.length <= 0 )
-            return null;
-        s ~= a[0];
-        foreach ( i; a[1..$] )
-            s ~= "."~i;
-        return s;
+        if ( fqn_string_.length <= 0 )
+        {
+            auto a = fqn();
+            if ( a.length <= 0 )
+                return null;
+            fqn_string_ ~= a[0];
+            foreach ( i; a[1..$] )
+                fqn_string_ ~= "."~i;
+        }
+        return fqn_string_;
     }
 
     /**********************************************************************************************
@@ -154,10 +222,13 @@ class Symbol
     **********************************************************************************************/
     string[] fqn()
     {
-        string[] fqn;
-        for ( auto s = this; s !is null; s = s.parent_ )
-            fqn ~= s.identifier_;
-        return fqn.reverse;
+        if ( fqn_.length <= 0 )
+        {
+            for ( auto s = this; s !is null; s = s.parent_ )
+                fqn_ ~= s.identifier_;
+            fqn_.reverse;
+        }
+        return fqn_;
     }
 
     /**********************************************************************************************
@@ -209,13 +280,13 @@ class ScopeSymbol : public Symbol
     this(string ident, Location loc)
     {
         super(ident, loc);
-        members_ = new AVLTree!(Symbol);
+        members_ = new typeof(members_);
     }
 
     protected this(string ident)
     {
         super(ident);
-        members_ = new AVLTree!(Symbol);
+        members_ = new typeof(members_);
     }
 
     ScopeSymbol opCatAssign(Symbol s)
@@ -298,13 +369,50 @@ class ScopeSymbol : public Symbol
         return s;
     }
 
+    /**********************************************************************************************
+
+    **********************************************************************************************/
     int opApply(int delegate(ref Symbol s) dg)
     {
         return members_.opApply(dg);
     }
 
+    /**********************************************************************************************
+
+    **********************************************************************************************/
+    LocationTree buildLocationTree()
+    {
+        auto t = new LocationTree;
+        t.loctree_t loctree;
+        Stack!(ScopeSymbol) stack;
+        stack ~= this;
+        while ( !stack.empty )
+        {
+            auto sc = stack.pop;
+            auto mod = cast(Module)sc;
+            if ( mod !is null )
+                loctree = t.insert(mod);
+            else if ( cast(Package)sc is null ) {
+                assert(loctree !is null);
+                loctree ~= sc;
+            }
+
+            foreach ( m; sc )
+            {
+                auto sc2 = cast(ScopeSymbol)m;
+                if ( sc2 !is null )
+                    stack ~= sc2;
+                else {
+                    assert(loctree !is null);
+                    loctree ~= m;
+                }
+            }
+        }
+        return t;
+    }
+
 private:
-    AVLTree!(Symbol)    members_;
+    AVLTree!(Symbol).AVLTree    members_;
     ScopeSymbol[]       imports_;
 }
 
@@ -373,6 +481,8 @@ class Declaration : public Symbol
 
     string toString()
     {
+        if ( type_ is null )
+            return "<unresolved type> "~identifier_;
         return type_.toString~" "~identifier_;
     }
 
@@ -409,17 +519,67 @@ class ScopeDeclaration : public ScopeSymbol
 /**************************************************************************************************
 
 **************************************************************************************************/
+struct BaseDeclaration
+{
+    string[]    id_list;
+    Protection  prot;
+}
+
 class ClassDeclaration : public ScopeDeclaration
 {
-    this(string ident, Location loc, DeclDefNode decl_def_node)
+    BaseDeclaration[]       base_decls_;
+    ClassDeclaration        base_class_decl_;
+    InterfaceDeclaration[]  iface_decls_;
+
+    this(string ident, BaseDeclaration[] base_list, Location loc, DeclDefNode decl_def_node)
     {
         super(new TypeClass(this), ident, loc, decl_def_node);
+        base_decls_ = base_list;
     }
 
     string toString()
     {
         return "class "~identifier_;
     }
+
+    void resolveBaseDecls(Package root_package)
+    {
+        foreach ( base; base_decls_ )
+        {
+            if ( base.id_list.length <= 0 ) {
+                Stdout.formatln("empty BaseDecl in {}", toString);
+                continue;
+            }
+            Symbol sym;
+            if ( base.id_list.length > 1 )
+                sym = root_package.findSymbol(base.id_list);
+            else
+                sym = lookup(base.id_list[0]);
+
+            if ( sym !is null )
+            {
+                Type t;
+                auto cdecl = cast(ClassDeclaration)sym;
+                auto idecl = cast(InterfaceDeclaration)sym;
+                if ( cdecl is null && idecl is null ) {
+                    Stdout.formatln("{}: BaseDecl {} is not a class or interface", location_.toString, sym.toString);
+                    continue;
+                }
+
+                if ( cdecl !is null )
+                {
+                    if ( base_class_decl_ !is null ) {
+                        Stdout.formatln("{}: Multiple base classes specified: {} and {}", location_.toString);
+                        continue;
+                    }
+                    base_class_decl_ = cdecl;
+                }
+                else
+                    iface_decls_ ~= idecl;
+            }
+        }
+    }
+
 }
 
 /**************************************************************************************************
@@ -484,7 +644,7 @@ class Package : public ScopeSymbol
 
     string toString()
     {
-        auto str = "package "~identifier_;
+        auto str = fqnString;
         if ( filepath_ !is null )
             str ~= " "~filepath_.toString;
         return str;
@@ -508,7 +668,7 @@ class Module : public Package
 
     string toString()
     {
-        auto str = "module "~identifier_;
+        auto str = fqnString;
         if ( filepath_ !is null )
             str ~= " "~filepath_.toString;
         return str;

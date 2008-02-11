@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 
@@ -210,6 +210,7 @@ seatdModule(Package root, Module mod)
         assert(mod !is null);
         ModuleDeclarationOpt(root, this, mod);
         SymbolAttribute attrs;
+        mod ~= new Import(["object"]);
         DeclDefsOpt(mod, attrs);
     }
 }
@@ -558,28 +559,28 @@ Pragma() no_ast
 /**************************************************************************************************
     Functions
 **************************************************************************************************/
-FunctionBody(FunctionDeclaration funcdecl)
+FunctionBody(ScopeSymbol parent, FunctionDeclaration funcdecl)
 {
     InStatement OutStatement BodyStatement
-    { BodyStatement(funcdecl); }
+    pass(symStmt) { BodyStatement(parent, funcdecl); }
 
     OutStatement InStatement BodyStatement
-    { BodyStatement(funcdecl); }
+    pass(symStmt) { BodyStatement(parent, funcdecl); }
 
     InStatement BodyStatement
-    { BodyStatement(funcdecl); }
+    pass(symStmt) { BodyStatement(parent, funcdecl); }
 
     OutStatement BodyStatement
-    { BodyStatement(funcdecl); }
+    pass(symStmt) { BodyStatement(parent, funcdecl); }
 
     BodyStatement
-    { BodyStatement(funcdecl); }
+    pass(symStmt) { BodyStatement(parent, funcdecl); }
 }
 
-FunctionBodyOpt(FunctionDeclaration funcdecl)
+FunctionBodyOpt(ScopeSymbol parent, FunctionDeclaration funcdecl)
 {
     FunctionBody
-    { FunctionBody(funcdecl); }
+    pass(symStmt) { FunctionBody(parent, funcdecl); }
 
     ";";
 }
@@ -595,19 +596,11 @@ OutStatement() no_ast
     "out" BlockStatement;
 }
 
-BodyStatement(FunctionDeclaration funcdecl)
+BodyStatement(ScopeSymbol parent, FunctionDeclaration funcdecl)
 {
     "body" BlockStatement
-    {
-        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
-        auto blockscope = new ScopeSymbol(null, Location(null, _ST_line_number, _ST_column_number));
-        BlockStatement(blockscope);
-    }
+    pass(symStmt) { BlockStatement(parent); }
 
     BlockStatement
-    {
-        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
-        auto blockscope = new ScopeSymbol(null, Location(null, _ST_line_number, _ST_column_number));
-        BlockStatement(blockscope);
-    }
+    pass(symStmt) { BlockStatement(parent); }
 }

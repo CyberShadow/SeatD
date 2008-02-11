@@ -250,8 +250,10 @@ class TypeIdentifier : public Type
 /**************************************************************************************************
 
 **************************************************************************************************/
-void resolveTypeIdentifers(Package root_package)
+void resolve(Package root_package)
 {
+    uint resolved, unresolved;
+
     Stack!(ScopeSymbol) stack;
     stack ~= root_package;
     while ( !stack.empty )
@@ -261,33 +263,48 @@ void resolveTypeIdentifers(Package root_package)
         {
             auto sc2 = cast(ScopeSymbol)s;
             if ( sc2 !is null )
+            {
+                auto cd = cast(ClassDeclaration)sc2;
+                if ( cd !is null )
+                    cd.resolveBaseDecls(root_package);
                 stack ~= sc2;
+            }
             else
             {
                 TypeIdentifier ti;
+
                 auto decl = cast(Declaration)s;
+                auto scdecl = cast(ScopeDeclaration)s;
                 if ( decl !is null )
                     ti = cast(TypeIdentifier)decl.type_;
-                else
-                {
-                    auto scdecl = cast(ScopeDeclaration)s;
-                    if ( scdecl !is null )
-                        ti = cast(TypeIdentifier)scdecl.type_;
-                }
+                else if ( scdecl !is null )
+                    ti = cast(TypeIdentifier)scdecl.type_;
+
                 if ( ti !is null )
                 {
                     auto t = ti.resolve(root_package, sc);
                     if ( t is null )
                     {
+                        ++unresolved;
                         Stdout.formatln(
                             "{}: undefined identifier {} is used as a type for {}",
                             s.location_.toString, ti, s.identifier_
                         );
                     }
+                    else
+                    {
+                        ++resolved;
+                        if ( decl !is null )
+                            decl.type_ = t;
+                        else if ( scdecl !is null )
+                            scdecl.type_ = t;
+                    }
                 }
             }
         }
     }
+
+    Stdout.formatln("{} resolved\n{} unresvoled\n", resolved, unresolved);
 }
 
 /**************************************************************************************************
@@ -381,53 +398,79 @@ class TypeDelegate : public Type
 /**************************************************************************************************
 
 **************************************************************************************************/
-class TypeClass : public Type
+interface TypeScopeDecl
+{
+    ScopeDeclaration scopeDecl();
+}
+
+/**************************************************************************************************
+
+**************************************************************************************************/
+class TypeClass : public Type, public TypeScopeDecl
 {
     ClassDeclaration decl_;
 
     this(ClassDeclaration decl)
     {
         super(TY.Tclass);
+        decl_ = decl;
     }
 
     string toString()
     {
         return decl_.toString;
     }
+
+    ScopeDeclaration scopeDecl()
+    {
+        return decl_;
+    }
 }
 
 /**************************************************************************************************
 
 **************************************************************************************************/
-class TypeStruct : public Type
+class TypeStruct : public Type, public TypeScopeDecl
 {
     StructDeclaration decl_;
 
     this(StructDeclaration decl)
     {
         super(TY.Tstruct);
+        decl_ = decl;
     }
 
     string toString()
     {
         return decl_.toString;
+    }
+
+    ScopeDeclaration scopeDecl()
+    {
+        return decl_;
     }
 }
 
 /**************************************************************************************************
 
 **************************************************************************************************/
-class TypeInterface : public Type
+class TypeInterface : public Type, public TypeScopeDecl
 {
     InterfaceDeclaration decl_;
 
     this(InterfaceDeclaration decl)
     {
         super(TY.Tclass);
+        decl_ = decl;
     }
 
     string toString()
     {
         return decl_.toString;
+    }
+
+    ScopeDeclaration scopeDecl()
+    {
+        return decl_;
     }
 }

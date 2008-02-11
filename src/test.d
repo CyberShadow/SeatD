@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 module test;
@@ -98,7 +98,53 @@ void main(string[] args)
             ip ~= include_paths;
             ip.extract(fp, mod.fqn);
             ip.parseImports(root_package, mod, true, true, false);
-            resolveTypeIdentifers(root_package);
+
+            Stdout("resolving types...").newline;
+            resolve(root_package);
+            Stdout("build location tree...").newline;
+            auto loc_tree = root_package.buildLocationTree;
+
+            // example auto-completion
+            auto sym = loc_tree.find(Location(mod, 138, 47));
+            while ( cast(ScopeSymbol)sym is null )
+                sym = sym.parent_;
+            Stdout.formatln("found {}", sym.toString);
+            auto sc = cast(ScopeSymbol)sym;
+            sym = sc.lookup("root_package_");
+            if ( sym is null )
+                Stdout.formatln("found null symbol");
+            else
+            {
+                Stdout.formatln("found {} which is a {}", sym.toString, sym.classinfo.name);
+                auto decl = cast(Declaration)sym;
+                if ( decl !is null )
+                {
+                    assert(decl.type_ !is null);
+                    Stdout.formatln("found a decl with a {} {}", decl.type_.classinfo.name, decl.type_.toString);
+                    auto tsd = cast(TypeScopeDecl)decl.type_;
+                    if ( tsd !is null )
+                        sc = tsd.scopeDecl;
+                }
+                else
+                    sc = cast(ScopeSymbol)sym;
+                if ( sc is null )
+                    Stdout.formatln("is not a ScopeSymbol/Decl");
+                else
+                {
+                    auto cd = cast(ClassDeclaration)sc;
+                    if ( cd !is null )
+                    {
+                        for ( auto i = cd; i !is null; i = i.base_class_decl_ )
+                        {
+                            foreach ( m; i )
+                                Stdout.formatln("class member: {}", m.toString);
+                        }
+                    }
+                    else foreach ( m; sc )
+                        Stdout.formatln("non-class member: {}", m.toString);
+                }
+            }
+
         }
 /+        catch ( Exception e )
         {
@@ -111,7 +157,7 @@ void main(string[] args)
             printMod(mod);
         }
 +/
-        printSymbolTree(root_package);
+//        printSymbolTree(root_package);
     }
 
     auto seconds = sw.stop;

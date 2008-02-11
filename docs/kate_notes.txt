@@ -1,11 +1,14 @@
 [12:47:32] <maxter> kate crashes when disabling and then re-enabling the plugin
 [12:48:13] <maxter> disable - close the dialog - open the dialog - enable - crash
+- probably runtime re-init
 
 - form docs to 80cols
 
 - pagedown/up in search field should propagate to listview
 - add own user/directory configs?
 - kate-modelines are not optimal for include paths, because the file has to be opened in kate
+
+- have way to visualize running parser (sidebar icon blinking?)
 
 - list isn't cleared when switching documents (maybe don't remove, since once dirty-stuff works, it will be repopulated anyway)
 - reparse on open

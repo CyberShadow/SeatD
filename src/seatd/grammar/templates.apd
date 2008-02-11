@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 
@@ -102,8 +102,10 @@ ClassTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode 
         string name;
         Identifier(name);
 
+        BaseDeclaration[] base_list;
+        BaseClassListOpt(base_list);
         auto classdecl = new ClassDeclaration(
-            name,
+            name, base_list,
             Location(parent.findModule, _ST_line_number, _ST_column_number),
             decl_def_node
         );
@@ -156,20 +158,24 @@ StructTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode
 
 FunctionTemplateDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def_node)
 {
+    APDNode {
+        FunctionDeclaration func_decl;
+    }
+
     TypeIdent "(" TemplateParameterList ")" "(" ParameterListOpt ")" FunctionBody
     {
         Type    type;
         string  ident;
         TypeIdent(type, ident);
 
-        auto fd = new FunctionDeclaration(
+        func_decl = new FunctionDeclaration(
             type, ident,
             Location(parent.findModule, _ST_line_number, _ST_column_number),
             decl_def_node
         );
-        parent ~= fd;
-        FunctionBody(fd);
+        parent ~= func_decl;
     }
+    pass(symStmt) { FunctionBody(parent, func_decl); }
 }
 
 // used to avoid a s/r conflict of Type and Declarator

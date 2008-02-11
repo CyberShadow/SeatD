@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 
@@ -13,8 +13,10 @@ ClassDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def
         string name;
         Identifier(name);
 
+        BaseDeclaration[] base_list;
+        BaseClassListOpt(base_list);
         auto classdecl = new ClassDeclaration(
-            name,
+            name, base_list,
             Location(parent.findModule, _ST_line_number, _ST_column_number),
             decl_def_node
         );
@@ -25,36 +27,65 @@ ClassDeclaration(ScopeSymbol parent, SymbolAttribute attrs, DeclDefNode decl_def
     }
 }
 
-BaseClassListOpt() no_ast
+BaseClassListOpt(out BaseDeclaration[] base_list)
 {
-    ":" BaseClassList;
+    ":" BaseClassList
+    { BaseClassList(); base_list = BaseClassList_node.base_list; }
+
     epsilon;
 }
 
-BaseClassList() no_ast
+BaseClassList()
 {
-    SuperClass "," InterfaceClasses;
-    SuperClass;
+    APDNode {
+        BaseDeclaration[]  base_list;
+    }
+
+    APDLocal {
+        string[] idlist;
+    }
+
+    BaseClassList "," SuperClass
+    {
+        BaseClassList();
+        BaseDeclaration base;
+        SuperClass(base);
+        base_list ~= base;
+    }
+
+    SuperClass
+    {
+        BaseDeclaration base;
+        SuperClass(base);
+        base_list ~= base;
+    }
 }
 
-SuperClass() no_ast
+SuperClass(out BaseDeclaration base)
 {
-    Protection IdentifierList;
-    IdentifierList;
+    ProtectionNT IdentifierList
+    {
+        ProtectionNT(base.prot);
+        IdentifierList(base.id_list);
+    }
+
+    IdentifierList
+    { IdentifierList(base.id_list); }
 }
 
-InterfaceClasses() no_ast
+ProtectionNT(out Protection prot)
 {
-    InterfaceClasses "," SuperClass;
-    SuperClass;
-}
+    "private"
+    { prot = Protection.Pprivate; }
 
-Protection() no_ast
-{
-    "private";
-    "package";
-    "public";
-    "export";
+    "package"
+    { prot = Protection.Ppackage; }
+
+    "public"
+    { prot = Protection.Ppublic; }
+
+    "export"
+    { prot = Protection.Pexport; }
 }
 
 ClassBody(ScopeSymbol parent, SymbolAttribute attrs)
@@ -162,7 +193,7 @@ SuperInterfaces() no_ast
 
 SuperInterface() no_ast
 {
-    Protection IdentifierList;
+    ProtectionNT IdentifierList;
     IdentifierList;
 }
 

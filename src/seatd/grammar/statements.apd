@@ -1,5 +1,5 @@
 /*  SEATD - Semantics Aware Tools for D
- *  Copyright (c) 2007 Jascha Wetzel. All rights reserved
+ *  Copyright (c) 2007-2008 Jascha Wetzel. All rights reserved
  *  License: Artistic License 2.0, see license.txt
  */
 
@@ -12,63 +12,89 @@ ConditionalStatement() no_ast
 Statement(ScopeSymbol parent)
 {
     NonEmptyStatement
-    { NonEmptyStatement(parent); }
+    pass(symStmt) { NonEmptyStatement(parent); }
 
     BlockStatement
-    { BlockStatement(parent); }
+    pass(symStmt) { BlockStatement(parent); }
 }
 
 StatementList(ScopeSymbol parent)
 {
     StatementList !(sync) Statement
-    { StatementList(parent); Statement(parent); }
+    pass(symStmt) { StatementList(parent); Statement(parent); }
 
     Statement
-    { Statement(parent); }
+    pass(symStmt) { Statement(parent); }
 }
 
-NoScopeNonEmptyStatement() no_ast
+NoScopeNonEmptyStatement(ScopeSymbol parent)
 {
-    NonEmptyStatement;
-    BlockStatement;
+    NonEmptyStatement
+    pass(symStmt) { NonEmptyStatement(parent); }
+
+    BlockStatement
+    pass(symStmt) { BlockStatement(parent); }
 }
 
-NoScopeStatement() no_ast
+NoScopeStatement(ScopeSymbol parent)
 {
-    NonEmptyStatement;
-    BlockStatement;
+    NonEmptyStatement
+    pass(symStmt) { NonEmptyStatement(parent); }
+
+    BlockStatement
+    pass(symStmt) { BlockStatement(parent); }
 }
 
 NonEmptyStatement(ScopeSymbol parent)
 {
     DeclDef
-    {
+    pass(symStmt) {
         SymbolAttribute attrs;
-        DeclDef(parent, attrs);
+        DeclDef_node._S_DeclDef_default(parent, attrs);
     }
-    
+
     NonEmptyNoDeclStatement
-    { /* NonEmptyNoDeclStatement(info, parentDecl); */ }
+    pass(symStmt) { /* NonEmptyNoDeclStatement(info, parentDecl); */ }
 }
 
 NonEmptyNoDeclStatement(ScopeSymbol parent)
 {
     LabeledStatement;
     ExpressionStatement;
-    IfStatement;
+
+    IfStatement
+    pass(symStmt) { IfStatement(parent); }
+
     ConditionalStatement;
-    WhileStatement;
-    DoStatement;
-    ForStatement;
-    ForeachStatement;
-    SwitchStatement;
+
+    WhileStatement
+    pass(symStmt) { WhileStatement(parent); }
+
+    DoStatement
+    pass(symStmt) { DoStatement(parent); }
+
+    ForStatement
+    pass(symStmt) { ForStatement(parent); }
+
+    ForeachStatement
+    pass(symStmt) { ForeachStatement(parent); }
+
+    ForeachRangeStatement
+    pass(symStmt) { ForeachRangeStatement(parent); }
+
+    SwitchStatement
+    pass(symStmt) { SwitchStatement(parent); }
+
     CaseStatement;
     DefaultStatement;
     ContinueStatement;
     BreakStatement;
     ReturnStatement;
     GotoStatement;
-    WithStatement;
+
+    WithStatement
+    pass(symStmt) { WithStatement(parent); }
+
     SynchronizedStatement;
     TryStatement;
     ScopeGuardStatement;
@@ -76,13 +102,23 @@ NonEmptyNoDeclStatement(ScopeSymbol parent)
     VolatileStatement;
     AsmStatement;
     PragmaStatement;
-    ForeachRangeStatement;
 }
 
-ScopeStatement() no_ast
+ScopeStatement(ScopeSymbol parent)
 {
-    NonEmptyStatement;
-    BlockStatement;
+    NonEmptyStatement
+    pass(symStmt) {
+        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
+        auto sc = new ScopeSymbol("__block", Location(parent.findModule, _ST_line_number, _ST_column_number));
+        NonEmptyStatement(sc);
+    }
+
+    BlockStatement
+    pass(symStmt) {
+        // TODO: a block isn't a symbol - create class Scope? does ScopeSymbol inherit it?
+        auto sc = new ScopeSymbol("__block", Location(parent.findModule, _ST_line_number, _ST_column_number));
+        BlockStatement(sc);
+    }
 }
 
 NoDeclScopeStatement() no_ast
@@ -101,7 +137,9 @@ BlockStatement(ScopeSymbol parent)
     "{" "}";
 
     "{" StatementList "}"
-    { StatementList(parent); }
+    pass(symStmt) {
+        StatementList(parent);
+    }
 }
 
 ExpressionStatement() no_ast
@@ -109,10 +147,13 @@ ExpressionStatement() no_ast
     Expression ";";
 }
 
-IfStatement() no_ast
+IfStatement(ScopeSymbol parent)
 {
-	"if" "(" IfCondition ")" !(sync) ScopeStatement;
-	"if" "(" IfCondition ")" !(sync) ScopeStatement "else" ScopeStatement=S2;
+	"if" "(" IfCondition ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
+
+	"if" "(" IfCondition ")" !(sync) ScopeStatement "else" ScopeStatement=S2
+    pass(symStmt) { ScopeStatement(parent); S2(parent); }
 }
 
 IfCondition() no_ast
@@ -122,24 +163,28 @@ IfCondition() no_ast
 	BasicType Declarator "=" Expression;
 }
 
-WhileStatement() no_ast
+WhileStatement(ScopeSymbol parent)
 {
-    "while" "(" Expression ")" !(sync) ScopeStatement;
+    "while" "(" Expression ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
-DoStatement() no_ast
+DoStatement(ScopeSymbol parent)
 {
-    "do" ScopeStatement "while" "(" Expression ")";
+    "do" ScopeStatement "while" "(" Expression ")"
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
-ForStatement() no_ast
+ForStatement(ScopeSymbol parent)
 {
-	"for" "(" NoScopeNonEmptyStatement ExpressionOpt ";" ExpressionOpt=EL2 ")" !(sync) ScopeStatement;
+	"for" "(" NoScopeNonEmptyStatement ExpressionOpt ";" ExpressionOpt=EL2 ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
-ForeachStatement() no_ast
+ForeachStatement(ScopeSymbol parent)
 {
-    Foreach "(" ForeachTypeList ";" Expression ")" !(sync) ScopeStatement;
+    Foreach "(" ForeachTypeList ";" Expression ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
 Foreach() no_ast
@@ -164,14 +209,16 @@ ForeachType() no_ast
     Identifier;
 }
 
-ForeachRangeStatement() no_ast
+ForeachRangeStatement(ScopeSymbol parent)
 {
-    Foreach "(" ForeachType ";" AssignExpression ".." AssignExpression ")" !(sync) ScopeStatement;
+    Foreach "(" ForeachType ";" AssignExpression ".." AssignExpression ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
-SwitchStatement() no_ast
+SwitchStatement(ScopeSymbol parent)
 {
-	"switch" "(" Expression ")" !(sync) BlockStatement;
+	"switch" "(" Expression ")" !(sync) BlockStatement
+    pass(symStmt) { BlockStatement(parent); }
 }
 
 CaseStatement() no_ast
@@ -210,10 +257,13 @@ GotoStatement() no_ast
     "goto" "case" Expression ";";
 }
 
-WithStatement() no_ast
+WithStatement(ScopeSymbol parent)
 {
-    "with" "(" Expression ")" !(sync) ScopeStatement;
-    "with" "(" TemplateInstance ")" !(sync) ScopeStatement;
+    "with" "(" Expression ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
+
+    "with" "(" TemplateInstance ")" !(sync) ScopeStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
 SynchronizedStatement() no_ast
@@ -224,9 +274,14 @@ SynchronizedStatement() no_ast
 
 TryStatement() no_ast
 {
-    "try" ScopeStatement Catches;
-    "try" ScopeStatement Catches FinallyStatement;
-    "try" ScopeStatement FinallyStatement;
+    "try" ScopeStatement Catches
+    pass(symStmt) { ScopeStatement(parent); }
+
+    "try" ScopeStatement Catches FinallyStatement
+    pass(symStmt) { ScopeStatement(parent); }
+
+    "try" ScopeStatement FinallyStatement
+    pass(symStmt) { ScopeStatement(parent); }
 }
 
 Catches() no_ast
